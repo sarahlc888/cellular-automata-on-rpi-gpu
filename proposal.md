@@ -1,7 +1,8 @@
 ## Project title
 
 ## Team members
-Avi Udash
+- Avi Udash
+- Sarah Chen
 
 ## Project description
 Short description of the basic idea and end goal you are aiming for. 
