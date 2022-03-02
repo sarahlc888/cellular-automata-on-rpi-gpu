@@ -1,6 +1,4 @@
-<<<<<<< HEAD
 # sarahlc888-aviously25-project
-=======
 ## Project title
 
 ## Team members
@@ -25,4 +23,3 @@ the process you followed? what you learned along the way? Tell us about it!
 ## Photos
 You are encouraged to submit photos/videos of your project in action. 
 Add the files and commit to your project repository to include along with your submission.
->>>>>>> 9caaa12217440953a99ec80c87c1cb7773e19cc1
