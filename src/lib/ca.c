@@ -21,6 +21,7 @@
  * - operate based on rule table to simplify implementation?
  */
 
+#include "../../include/ca.h"
 #include "timer.h"
 #include "fb.h"
 #include "gl.h"
@@ -40,6 +41,14 @@ typedef struct {
 
 static volatile ca_config_t ca; // TODO: why volatile?
 
+static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c, void *state);
+static unsigned int wireworld_update_pix(unsigned int r, unsigned int c, void *state);
+static const ca_option_t ca_modes[] = {
+    {"life",        "Conway",       game_of_life_update_pix},
+    {"wireworld",   "WireWorld!",   wireworld_update_pix},
+};
+
+
 /*
  * Function: ca_init
  * --------------------------
@@ -50,6 +59,8 @@ void ca_init(unsigned int ca_mode,
     color_t* colors,
     unsigned int update_delay)
 {
+    // TODO: specify mode by string?
+
     gl_init(screen_width, screen_height, GL_DOUBLEBUFFER); // initialize frame buffer
 
     // init all pixels to background color (in both buffers)
@@ -68,7 +79,18 @@ void ca_init(unsigned int ca_mode,
 
 }
 
-void make_glider(int r, int c, void *state, color_t on_state_color)
+// TODO: move these into their own module
+void make_row_wire(int r, int c, void *state)
+{
+    unsigned int (*state_2d)[ca.padded_width] = state;
+    for (int j = c; j < ca.height - 5; j++) {
+        state_2d[r][j] = ca.state_colors[3];
+    }
+    state_2d[r][c + 1] = ca.state_colors[1]; // head
+    state_2d[r][c] = ca.state_colors[2]; // tail
+}
+
+void make_osc(int r, int c, void *state, color_t on_state_color)
 {
     unsigned int (*state_2d)[ca.padded_width] = state;
 
@@ -86,24 +108,13 @@ void make_glider(int r, int c, void *state, color_t on_state_color)
  */
 void create_initial_state(void *state, color_t on_state_color)
 {
-    // unsigned int (*state_2d)[ca.padded_width] = state;
-
-    // TODO: make this not random
     for (int i = 5; i < ca.width - 5; i += 5) {
-        for (int j = 5; j < ca.height - 5; j += 5) {
-            make_glider(i, j, state, on_state_color);
-        }
+        make_row_wire(i, 10, state);
+        // for (int j = 5; j < ca.height - 5; j += 5) {
+        //     make_osc(i, j, state, on_state_color);
+        // }
     }
-
-    make_glider(10, 10, state, on_state_color);
-
-    // unsigned int (*state_2d)[ca.padded_width] = state;
-
-    // int r = 10;
-    // int c = 20;
-    // state_2d[r][c - 1] = on_state_color;
-    // state_2d[r][c] = on_state_color;
-    // state_2d[r][c + 1] = on_state_color;
+    // make_osc(10, 10, state, on_state_color);
 }
 
 /*
@@ -151,6 +162,28 @@ static unsigned int count_neighbors_von_neumann(unsigned int r, unsigned int c, 
     return target_count;
 }
 
+// https://mathworld.wolfram.com/WireWorld.html
+static unsigned int wireworld_update_pix(unsigned int r, unsigned int c, void *state) 
+{
+    unsigned int (*state_2d)[ca.padded_width] = state;
+    unsigned int cell_state = state_2d[r][c];
+
+    if (cell_state == ca.state_colors[1]) {
+        // electron head always turns into an electron tail
+        return ca.state_colors[2]; 
+    } else if (cell_state == ca.state_colors[2]) {
+        // electron tail always turns into wire
+        return ca.state_colors[3]; 
+    } else if (cell_state == ca.state_colors[3]) {
+        // wire remains wire unless u is 1 or 2 (becomes an electron head)
+        unsigned int live_neighbors = count_neighbors_moore(r, c, ca.state_colors[1], state);
+        if (live_neighbors == 1 || live_neighbors == 2) {
+            return ca.state_colors[1]; 
+        }
+    }
+    return cell_state;
+}
+
 /*
  * Function: game_of_life_update_pix
  * --------------------------
@@ -158,33 +191,33 @@ static unsigned int count_neighbors_von_neumann(unsigned int r, unsigned int c, 
  * By observing `state`, it considers its current state and the state of its 
  * neighbors. It returns the new state of the cell.
  * 
- * The `live_state` and `dead_state` specify the colors of live and dead cells.
+ * `ca.state_colors[1]` and `ca.state_colors[0]` respectively specify the colors 
+ * of live and dead cells.
  * 
  * TODO: I should probably decompose further so that the states are not determined
  * by the colors. I should probably malloc rather than keeping everything implicit
  * in the framebuffers.
  */
-static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c, void *state,
-    color_t live_state, color_t dead_state) 
+static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c, void *state) 
 {
     unsigned int (*state_2d)[ca.padded_width] = state;
     unsigned int cell_state = state_2d[r][c];
-    unsigned int live_neighbors = count_neighbors_moore(r, c, live_state, state);
+    unsigned int live_neighbors = count_neighbors_moore(r, c, ca.state_colors[1], state);
 
 
-    if (cell_state == live_state) {
+    if (cell_state == ca.state_colors[1]) {
         if (live_neighbors == 2 || live_neighbors == 3) {
             // printf("row %d, col %d, neighs %d\n", r, c, live_neighbors);
-            return live_state; // live cell w/ 2 or 3 live neighbours survives
+            return ca.state_colors[1]; // live cell w/ 2 or 3 live neighbours survives
         } else {
-            return dead_state; // otherwise, it dies
+            return ca.state_colors[0]; // otherwise, it dies
         }
-    } else if (cell_state == dead_state) {
+    } else if (cell_state == ca.state_colors[0]) {
         if (live_neighbors == 3) {
             // printf("row %d, col %d, neighs %d\n", r, c, live_neighbors);
-            return live_state; // dead cell w/ 3 live neighbours becomes a live cell
+            return ca.state_colors[1]; // dead cell w/ 3 live neighbours becomes a live cell
         } else {
-            return dead_state; // otherwise, it remains dead
+            return ca.state_colors[0]; // otherwise, it remains dead
         }
     } else {
         return cell_state; // TODO: catch exception
@@ -203,9 +236,8 @@ static void update_state(unsigned int *prev, void *next)
         for (int r = 0; r < ca.width; r++) {
 
             // read state from prev
-            // TODO: update the state based on ca.mode rather than defaulting to the game of life
-            // TODO: should i have separate update functions based on rule? 
-            unsigned int new_state = game_of_life_update_pix(r, c, prev, ca.state_colors[1], ca.state_colors[0]);
+            // TODO: move this outside the loop?
+            unsigned int new_state = ca_modes[ca.mode].fn(r, c, prev);
             // write pixel in next
             unsigned int (*state_2d)[ca.padded_width] = next;
             state_2d[r][c] = new_state;
