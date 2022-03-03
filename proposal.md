@@ -41,6 +41,7 @@ Major task breakdown and who is responsible for each task.
     - Relatively straightforward task 
     - Build a cellular automata module on top of the graphics library to support 1-3 different types of cellular automata (starting with the game of life). The library should be able to read start states from a specified file format and run the automata for a specified amount of steps/time (or indefinitely). It should display on a double-buffered display.
     - Optional: the library should write states to files as well.
+    - Optional: the library can be made more sophisticated as time allows.
 - **File system** - Avi
     - The file system is needed to store and then select from pre-settings 
     - We plan to follow the provided guide on the CS 107E website to make a lightweight file system

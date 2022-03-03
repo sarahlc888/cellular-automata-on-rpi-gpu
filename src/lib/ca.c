@@ -31,6 +31,7 @@ typedef struct {
 
     unsigned int height;        // height of the physical screen
     unsigned int width;         // width of the physical screen
+    unsigned int padded_width;  // width of the physical screen plus padding
     color_t* state_colors;      // colors for various states
 
     unsigned int update_ms;   // ms between state updates
@@ -61,9 +62,19 @@ void ca_init(unsigned int ca_mode,
     ca.mode = ca_mode;
     ca.state_colors = colors;
     ca.width = screen_width;
+    ca.padded_width = fb_get_pitch() / fb_get_depth(); 
     ca.height = screen_height;
     ca.update_ms = update_delay; 
 
+}
+
+void make_glider(int r, int c, void *state, color_t on_state_color)
+{
+    unsigned int (*state_2d)[ca.padded_width] = state;
+
+    state_2d[r][c - 1] = on_state_color;
+    state_2d[r][c] = on_state_color;
+    state_2d[r][c + 1] = on_state_color;
 }
 
 /*
@@ -75,36 +86,47 @@ void ca_init(unsigned int ca_mode,
  */
 void create_initial_state(void *state, color_t on_state_color)
 {
-    unsigned int (*state_2d)[ca.width] = state;
+    // unsigned int (*state_2d)[ca.padded_width] = state;
 
     // TODO: make this not random
-    state_2d[10][9] = on_state_color;
-    state_2d[10][10] = on_state_color;
-    state_2d[10][11] = on_state_color;
-    
+    for (int i = 5; i < ca.width - 5; i += 5) {
+        for (int j = 5; j < ca.height - 5; j += 5) {
+            make_glider(i, j, state, on_state_color);
+        }
+    }
+
+    make_glider(10, 10, state, on_state_color);
+
+    // unsigned int (*state_2d)[ca.padded_width] = state;
+
+    // int r = 10;
+    // int c = 20;
+    // state_2d[r][c - 1] = on_state_color;
+    // state_2d[r][c] = on_state_color;
+    // state_2d[r][c + 1] = on_state_color;
 }
 
 /*
  * Function: count_neighbors_moore
  * --------------------------
  * This function returns the number of directly-adjacent or diagonal neighbors of cell 
- * (`x`, `y`) that have state (aka color) `state_to_count` in `state`.
+ * (`r`, `c`) that have state (aka color) `state_to_count` in `state`.
  */
-static unsigned int count_neighbors_moore(unsigned int x, unsigned int y, unsigned int state_to_count, void *state)
+static unsigned int count_neighbors_moore(unsigned int r, unsigned int c, unsigned int state_to_count, void *state)
 {
-    unsigned int (*state_2d)[ca.width] = state;
+    unsigned int (*state_2d)[ca.padded_width] = state;
 
     unsigned int target_count = 0;
 
-    target_count += (state_2d[x][y + 1] == state_to_count);
-    target_count += (state_2d[x + 1][y] == state_to_count);
-    target_count += (state_2d[x][y - 1] == state_to_count);
-    target_count += (state_2d[x - 1][y] == state_to_count);
+    target_count += (state_2d[r][c + 1] == state_to_count);
+    target_count += (state_2d[r + 1][c] == state_to_count);
+    target_count += (state_2d[r][c - 1] == state_to_count);
+    target_count += (state_2d[r - 1][c] == state_to_count);
 
-    target_count += (state_2d[x - 1][y - 1] == state_to_count);
-    target_count += (state_2d[x - 1][y + 1] == state_to_count);
-    target_count += (state_2d[x + 1][y - 1] == state_to_count);
-    target_count += (state_2d[x + 1][y + 1] == state_to_count);
+    target_count += (state_2d[r - 1][c - 1] == state_to_count);
+    target_count += (state_2d[r - 1][c + 1] == state_to_count);
+    target_count += (state_2d[r + 1][c - 1] == state_to_count);
+    target_count += (state_2d[r + 1][c + 1] == state_to_count);
 
     return target_count;
 }
@@ -112,19 +134,19 @@ static unsigned int count_neighbors_moore(unsigned int x, unsigned int y, unsign
 /*
  * Function: count_neighbors_von_neumann
  * --------------------------
- * This function returns the number of directly-adjacent neighbors of cell (`x`, `y`) 
+ * This function returns the number of directly-adjacent neighbors of cell (`r`, `c`) 
  * that have state (aka color) `state_to_count` in `state`.
  */
-static unsigned int count_neighbors_von_neumann(unsigned int x, unsigned int y, unsigned int state_to_count, void *state)
+static unsigned int count_neighbors_von_neumann(unsigned int r, unsigned int c, unsigned int state_to_count, void *state)
 {
-    unsigned int (*state_2d)[ca.width] = state;
+    unsigned int (*state_2d)[ca.padded_width] = state;
 
     unsigned int target_count = 0;
 
-    target_count += (state_2d[x][y + 1] == state_to_count);
-    target_count += (state_2d[x + 1][y] == state_to_count);
-    target_count += (state_2d[x][y - 1] == state_to_count);
-    target_count += (state_2d[x - 1][y] == state_to_count);
+    target_count += (state_2d[r][c + 1] == state_to_count);
+    target_count += (state_2d[r + 1][c] == state_to_count);
+    target_count += (state_2d[r][c - 1] == state_to_count);
+    target_count += (state_2d[r - 1][c] == state_to_count);
 
     return target_count;
 }
@@ -132,7 +154,7 @@ static unsigned int count_neighbors_von_neumann(unsigned int x, unsigned int y, 
 /*
  * Function: game_of_life_update_pix
  * --------------------------
- * This function updates the state of the cell at coordinate (`x`, `y`).
+ * This function updates the state of the cell at coordinate (`r`, `c`).
  * By observing `state`, it considers its current state and the state of its 
  * neighbors. It returns the new state of the cell.
  * 
@@ -142,21 +164,24 @@ static unsigned int count_neighbors_von_neumann(unsigned int x, unsigned int y, 
  * by the colors. I should probably malloc rather than keeping everything implicit
  * in the framebuffers.
  */
-static unsigned int game_of_life_update_pix(unsigned int x, unsigned int y, void *state,
+static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c, void *state,
     color_t live_state, color_t dead_state) 
 {
-    unsigned int (*state_2d)[ca.width] = state;
-    unsigned int cell_state = state_2d[x][y];
-    unsigned int live_neighbors = count_neighbors_moore(x, y, live_state, state);
+    unsigned int (*state_2d)[ca.padded_width] = state;
+    unsigned int cell_state = state_2d[r][c];
+    unsigned int live_neighbors = count_neighbors_moore(r, c, live_state, state);
+
 
     if (cell_state == live_state) {
         if (live_neighbors == 2 || live_neighbors == 3) {
+            // printf("row %d, col %d, neighs %d\n", r, c, live_neighbors);
             return live_state; // live cell w/ 2 or 3 live neighbours survives
         } else {
             return dead_state; // otherwise, it dies
         }
     } else if (cell_state == dead_state) {
         if (live_neighbors == 3) {
+            // printf("row %d, col %d, neighs %d\n", r, c, live_neighbors);
             return live_state; // dead cell w/ 3 live neighbours becomes a live cell
         } else {
             return dead_state; // otherwise, it remains dead
@@ -174,16 +199,16 @@ static unsigned int game_of_life_update_pix(unsigned int x, unsigned int y, void
 static void update_state(unsigned int *prev, void *next)
 {
     // update each pixel
-    for (int y = 0; y < ca.height; y++) {
-        for (int x = 0; x < ca.width; x++) {
+    for (int c = 0; c < ca.height; c++) {
+        for (int r = 0; r < ca.width; r++) {
 
             // read state from prev
             // TODO: update the state based on ca.mode rather than defaulting to the game of life
             // TODO: should i have separate update functions based on rule? 
-            unsigned int new_state = game_of_life_update_pix(x, y, prev, ca.state_colors[1], ca.state_colors[0]);
+            unsigned int new_state = game_of_life_update_pix(r, c, prev, ca.state_colors[1], ca.state_colors[0]);
             // write pixel in next
-            unsigned int (*state_2d)[ca.width] = next;
-            state_2d[x][y] = new_state;
+            unsigned int (*state_2d)[ca.padded_width] = next;
+            state_2d[r][c] = new_state;
         }
     }
 
@@ -213,7 +238,7 @@ void ca_run(void)
 
         // retrieve buffer for the next state
         next_state = fb_get_draw_buffer();
-        // printf("updating. cur_state %p, next_state %p\n", cur_state, next_state);
+        printf("updating. cur_state %p, next_state %p\n", cur_state, next_state);
         update_state(cur_state, next_state);
 
         // show the buffer and make next_state the cur_state

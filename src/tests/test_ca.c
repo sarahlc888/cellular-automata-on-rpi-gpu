@@ -11,7 +11,8 @@ void main(void)
     printf("Running tests from file %s\n", __FILE__);
 
     color_t color_states[2] = {GL_BLACK, GL_WHITE};
-    ca_init(0, 64, 64, 2, color_states, 1000);
+    ca_init(0, 500, 500, 2, color_states, 100);
+    // ca_init(0, 500, 500, 2, color_states, 1000);
     ca_run();
 
     uart_putchar(EOT);
