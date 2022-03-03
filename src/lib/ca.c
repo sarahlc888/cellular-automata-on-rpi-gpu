@@ -15,8 +15,10 @@
  * frame buffers. Consider one and edit the other, making states and colors identical,
  * to avoid having 2 other prev/next buffers as well.
  * 
- * TODO: Langston's loop. make an array of colors and support multiple states using
- * that array rather than separate on/off variables.
+ * TODO: Langston's loop. 
+ * - support multiple states using the colors array rather than separate on/off variables.
+ * - support more granular neighbor information (which neighbors are on)
+ * - operate based on rule table to simplify implementation?
  */
 
 #include "timer.h"
@@ -29,8 +31,7 @@ typedef struct {
 
     unsigned int height;        // height of the physical screen
     unsigned int width;         // width of the physical screen
-    color_t foreground_color;   // foreground color
-    color_t background_color;   // background color
+    color_t* state_colors;      // colors for various states
 
     unsigned int update_ms;   // ms between state updates
 } ca_config_t;
@@ -39,29 +40,26 @@ typedef struct {
 static volatile ca_config_t ca; // TODO: why volatile?
 
 /*
- * Function: create_initial_state
+ * Function: ca_init
  * --------------------------
- * This function populates `state` with an initial test state.
- * 
- * TODO: read initial state from a file.
+ * The first color passed in `colors` is presumed to be the background color.
  */
 void ca_init(unsigned int ca_mode, 
-    unsigned int screen_width, unsigned int screen_height, 
-    color_t foreground, color_t background,
+    unsigned int screen_width, unsigned int screen_height, int num_states,
+    color_t* colors,
     unsigned int update_delay)
 {
     gl_init(screen_width, screen_height, GL_DOUBLEBUFFER); // initialize frame buffer
 
     // init all pixels to background color (in both buffers)
-    gl_clear(background);
+    gl_clear(colors[0]);
     gl_swap_buffer();
-    gl_clear(background);
+    gl_clear(colors[0]);
     gl_swap_buffer();
 
     // init global struct
     ca.mode = ca_mode;
-    ca.foreground_color = foreground;
-    ca.background_color = background;
+    ca.state_colors = colors;
     ca.width = screen_width;
     ca.height = screen_height;
     ca.update_ms = update_delay; 
@@ -182,7 +180,7 @@ static void update_state(unsigned int *prev, void *next)
             // read state from prev
             // TODO: update the state based on ca.mode rather than defaulting to the game of life
             // TODO: should i have separate update functions based on rule? 
-            unsigned int new_state = game_of_life_update_pix(x, y, prev, ca.foreground_color, ca.background_color);
+            unsigned int new_state = game_of_life_update_pix(x, y, prev, ca.state_colors[1], ca.state_colors[0]);
             // write pixel in next
             unsigned int (*state_2d)[ca.width] = next;
             state_2d[x][y] = new_state;
@@ -205,7 +203,7 @@ void ca_run(void)
 
     // load and display the initial state
     cur_state = fb_get_draw_buffer();
-    create_initial_state(cur_state, ca.foreground_color); // TODO: implement this
+    create_initial_state(cur_state, ca.state_colors[1]); // TODO: implement this
     // printf("inital state is cur_state %p\n", cur_state);
     gl_swap_buffer(); 
 

@@ -10,7 +10,8 @@ void main(void)
     timer_init();
     printf("Running tests from file %s\n", __FILE__);
 
-    ca_init(0, 64, 64, GL_WHITE, GL_BLACK, 1000);
+    color_t color_states[2] = {GL_BLACK, GL_WHITE};
+    ca_init(0, 64, 64, 2, color_states, 1000);
     ca_run();
 
     uart_putchar(EOT);
