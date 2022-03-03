@@ -9,11 +9,19 @@ We seek to create a program that simulates cellular automata on an HDMI display.
 
 We will support various pre-set start states (which we will store on the SD card using a basic filesystem) that users can select from using a hardware control board.
 
-The board will also include two knobs and a button that will enable users to select which automata to display, to select which start state to use, to customize individual pixels within the grid, and to start the simulation.
+The board will also include two knobs and a button that will enable users to:
+- Select which automata to display
+- Select which start state to use
+- Customize individual pixels within the grid
+- Start/stop the simulation.
 
 We hope to support relatively large scale simulations and will do so by leveraging the GPU. This is a stretch goal because we would need to write code to download code to the GPU and call that code. Fallback positions would include
 - Building off of existing GPU libraries (possibly from the past CS 107E project?)
-- Resorting to using the CPU only and focusing on polishing other aspects of the project. (We could try to take on another challenge instead, such as using ESP32 to customize the start state remotely. We could also potentially allow the users to create and save their own start states.)
+- Resorting to using the CPU only and focusing on polishing other aspects of the project, such as: 
+    - Another challenge, using ESP32 to customize the start state remotely
+    - Potentially allow the users to create and save their own start states
+    - Simulate more complex automata to simulate fluid dynamics
+    - Supporting 1D cellular automata like Rule 30
 
 We aim to learn how to read potentiometers and convert their signal to digital output using SPI protocol. We also hope to learn more about the role of the GPU within the Raspberry Pi and the specific advantages/differences that it carries, relative to CPU. 
 

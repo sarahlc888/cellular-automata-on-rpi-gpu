@@ -2,11 +2,11 @@
 # TODO: edit APPLICATION to name of project application from src/apps
 # TODO: edit TEST to name of unit test program from src/tests
 
-MY_MODULES = project-module.o
+MY_MODULES = ca.o
 
 # Targets for this makefile
 APPLICATION = build/project-app.bin
-TEST 	    = build/project-tests.bin
+TEST 	    = build/test_ca.bin
 
 all: $(APPLICATION) $(TEST)
 
