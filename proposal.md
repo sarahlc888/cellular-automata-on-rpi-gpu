@@ -17,6 +17,7 @@ We hope to support relatively large-scale, fast-paced simulations and will do so
 - Building off of existing GPU libraries (possibly from the past CS 107E project?)
 - Resorting to using the CPU only and focusing on polishing other aspects of the project, such as possibly: 
     - Allowing the users to save their own start state presets
+    - Displaying on an LED matrix rather than HDMI monitor
     - Supporting more complex automata to simulate fluid dynamics
     - Supporting 1D cellular automata like Rule 30
     - Using ESP32 to customize the start state remotely
