@@ -80,6 +80,51 @@ void ca_init(unsigned int ca_mode,
 }
 
 // TODO: move these into their own module
+void make_wireworld_or_gate(int r, int c, void *state, unsigned int gate_tail_length, unsigned int input1, unsigned int input2)
+{
+    
+    const int gate_height = 5;
+    const int gate_width = 3; // width of gate itself
+    const int in_tail_r1 = 1; // row of 1st input tail
+    const int in_tail_r2 = 3; // row of 1st input tail
+    const int out_tail_r = 2; // row of output tail
+
+    unsigned int (*state_2d)[ca.padded_width] = state;
+
+    // make input
+    unsigned int base_col = c;
+    for (int j = 0; j < gate_tail_length; j++) {
+        state_2d[r + in_tail_r1][base_col + j] = ca.state_colors[3];
+        state_2d[r + in_tail_r2][base_col + j] = ca.state_colors[3];
+    }
+    base_col += gate_tail_length;
+
+    // make gate
+    state_2d[r][base_col] = ca.state_colors[3];
+    state_2d[r + 4][base_col] = ca.state_colors[3];
+    state_2d[r][base_col + 1] = ca.state_colors[3];
+    state_2d[r + 2][base_col + 1] = ca.state_colors[3];
+    state_2d[r + 4][base_col + 1] = ca.state_colors[3];
+    state_2d[r + 1][base_col + 2] = ca.state_colors[3];
+    state_2d[r + 2][base_col + 2] = ca.state_colors[3];
+    state_2d[r + 3][base_col + 2] = ca.state_colors[3];
+    base_col += gate_width;
+
+    // make output tail
+    for (int j = 0; j < gate_tail_length; j++) {
+        state_2d[r + out_tail_r][base_col + j] = ca.state_colors[3];
+    }
+
+    // make electrons
+    if (input1) {
+        state_2d[r + in_tail_r1][c + 1] = ca.state_colors[1]; // head
+        state_2d[r + in_tail_r1][c] = ca.state_colors[2]; // tail
+    }
+    if (input2) {
+        state_2d[r + in_tail_r2][c + 1] = ca.state_colors[1]; // head
+        state_2d[r + in_tail_r2][c] = ca.state_colors[2]; // tail
+    }
+}
 void make_row_wire(int r, int c, void *state)
 {
     unsigned int (*state_2d)[ca.padded_width] = state;
@@ -108,13 +153,19 @@ void make_osc(int r, int c, void *state, color_t on_state_color)
  */
 void create_initial_state(void *state, color_t on_state_color)
 {
+    // make_wireworld_or_gate(10, 10, state, 4, 1, 0);
+    // return; // TODO: remove
+
     for (int i = 5; i < ca.width - 5; i += 5) {
-        make_row_wire(i, 10, state);
-        // for (int j = 5; j < ca.height - 5; j += 5) {
-        //     make_osc(i, j, state, on_state_color);
-        // }
+        if (ca.mode == 1) {
+            make_row_wire(i, 10, state);
+        }
+        if (ca.mode == 0) {
+            for (int j = 5; j < ca.height - 5; j += 5) {
+                make_osc(i, j, state, on_state_color);
+            }
+        }
     }
-    // make_osc(10, 10, state, on_state_color);
 }
 
 /*

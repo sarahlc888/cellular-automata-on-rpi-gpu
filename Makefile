@@ -2,7 +2,7 @@
 # TODO: edit APPLICATION to name of project application from src/apps
 # TODO: edit TEST to name of unit test program from src/tests
 
-MY_MODULES = ca.o
+MY_MODULES = ca.o read_write_ca.o
 
 # Targets for this makefile
 APPLICATION = build/project-app.bin
@@ -22,7 +22,7 @@ export freestanding = -ffreestanding -nostdinc \
 CFLAGS	= -I$(CS107E)/include -Og -g -std=c99 $$warn $$freestanding
 CFLAGS += -mapcs-frame -fno-omit-frame-pointer -mpoke-function-name
 LDFLAGS	= -nostdlib -T src/boot/memmap -L$(CS107E)/lib
-LDLIBS 	= -lpi -lgcc
+LDLIBS 	= -lpi -lpisd -lgcc
 
 # Rules and recipes for all build steps
 

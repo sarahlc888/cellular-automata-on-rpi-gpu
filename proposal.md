@@ -49,6 +49,7 @@ Budget: <$10
 - **Sensor input** - Both
     - Support potentiometers and button
     - Use SPI for analog-to-digital conversion
+    - Possibly an etch-a-sketch style interface
 - **Hardware controller board** - Both
     - Create the physical board to hold the controls
 - **GPU speedups** - Both
