@@ -2,16 +2,16 @@
 # TODO: edit APPLICATION to name of project application from src/apps
 # TODO: edit TEST to name of unit test program from src/tests
 
-MY_MODULES = ca.o
+MY_MODULES = ca.o mcp3008.o 
 
 # Targets for this makefile
 APPLICATION = build/project-app.bin
-TEST 	    = build/test_ca.bin
+TEST 	    = build/test_spi.bin
 
 all: $(APPLICATION) $(TEST)
 
 # Object files needed to build the application binary.
-OBJECTS = $(addprefix build/, $(MY_MODULES) start.o cstart.o)
+OBJECTS = $(addprefix build/, $(MY_MODULES) start.o cstart.o spi.o)
 
 # Flags for compile and link
 export warn = -Wall -Wpointer-arith -Wwrite-strings -Werror \
