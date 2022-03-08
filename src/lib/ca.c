@@ -323,13 +323,14 @@ void ca_create_and_load_preset(const char* fname, preset_fn_t make_preset)
  * 
  * It should also be preceded by a function that loads a preset.
  */
-void ca_run(void)
+void ca_run(unsigned int ticks_to_run)
 {
     // display the initial state
     ca.cur_state = fb_get_draw_buffer();
     gl_swap_buffer(); 
 
-    while (1)
+    unsigned int start = timer_get_ticks();
+    while (timer_get_ticks() < ticks_to_run + start)
     {
         timer_delay_ms(ca.update_ms);
 

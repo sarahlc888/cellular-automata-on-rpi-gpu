@@ -32,6 +32,6 @@ void ca_init(ca_mode_t ca_mode,
 
 void ca_create_and_load_preset(const char* fname, preset_fn_t make_preset);
 
-void ca_run(void);
+void ca_run(unsigned int ticks_to_run);
 
 #endif

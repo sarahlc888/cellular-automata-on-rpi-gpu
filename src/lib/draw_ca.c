@@ -57,6 +57,66 @@ gate_t and_gate = {
     }
 };
 
+// Game of life patterns
+// still life
+pattern_t block = {
+    .width = 2, .height = 2,
+    .data = {1, 1, 1, 1}
+};
+// oscillators
+pattern_t blinker_1 = {
+    .width = 3, .height = 1,
+    .data = {1, 1, 1}
+};
+pattern_t blinker_2 = {
+    .width = 1, .height = 3,
+    .data = {1, 1, 1}
+};
+pattern_t toad_1 = { // TODO: toad 2
+    .width = 4, .height = 2,
+    .data = {
+        0, 1, 1, 1,
+        1, 1, 1, 0
+    }
+};
+pattern_t beacon_1 = { // TODO: beacon_1
+    .width = 4, .height = 4,
+    .data = {
+        1, 1, 0, 0,
+        1, 0, 0, 0,
+        0, 0, 0, 1,
+        0, 0, 1, 1
+    }
+};
+pattern_t pulsar_1 = { // TODO: pulsar_2, 3
+    .width = 13, .height = 13,
+    .data = {
+        0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1,
+        1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1,
+        1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1,
+        0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+        1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1,
+        1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1,
+        1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
+    }
+};
+// spaceships
+pattern_t glider_1 = {
+    .width = 3, .height = 3,
+    .data = {
+        0, 0, 1,
+        1, 0, 1,
+        0, 1, 1,
+    }
+};
+
+
 static gate_t *gate_types[] = {&or_gate, &and_gate, &xor_gate};
 
 static void ww_draw_vert_line(unsigned int r, unsigned int c, unsigned int length,
@@ -172,6 +232,24 @@ static void ww_draw_row_wire(int r, int c, int wire_length,
     state_2d[r][c] = colors[2]; // tail
 }
 
+// draw specified pattern in GOL
+static void life_draw_pattern(pattern_t *pattern, int r, int c, 
+    void *state, unsigned int fb_padded_width, color_t* colors)
+{
+    // TODO: why does this only work when using a pointer to pattern
+
+    unsigned int (*state_2d)[fb_padded_width] = state;
+    // TODO: remove void * ? error: initialization of 'unsigned int (*)[(sizetype)(pattern->width)]' from incompatible pointer type 'unsigned int *'
+    unsigned int (*pattern_2d)[pattern->width] = (void *) pattern->data;
+    for (int i = 0; i < pattern->height; i++) {
+        for (int j = 0; j < pattern->width; j++) {
+            if (pattern_2d[i][j] == 1) {
+                state_2d[r + i][c + j] = colors[1];
+            }
+        }
+    }
+}
+
 /*
  * Function: life_draw_osc
  * --------------------------
@@ -182,6 +260,7 @@ static void ww_draw_row_wire(int r, int c, int wire_length,
 static void life_draw_osc(int r, int c, 
     void *state, unsigned int fb_padded_width, color_t* colors)
 {
+
     unsigned int (*state_2d)[fb_padded_width] = state;
 
     state_2d[r][c - 1] = colors[1];
@@ -199,8 +278,40 @@ void create_life_preset(unsigned int width, unsigned int height, unsigned int pa
     for (int i = 5; i < width - 5; i += 5) {
         for (int j = 5; j < height - 5; j += 5) {
             life_draw_osc(i, j, state, padded_width, colors);
+            // life_draw_pattern(&blinker_1, i, j, state, padded_width, colors);
         }
     }
+}
+
+/*
+ * Function: create_life_preset2
+ * --------------------------
+ * This function populates `state` with a custom preset state for Life that uses more patterns.
+ * 
+ * This requires at least a 32x32 screen
+ */
+void create_life_preset2(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors)
+{
+    int cur_row = 5;
+    int cur_col = 5;
+    life_draw_pattern(&block, cur_row, cur_col, state, padded_width, colors);        
+    cur_row += 6;
+    life_draw_pattern(&blinker_1, cur_row, cur_col, state, padded_width, colors);        
+    cur_row += 6;
+    life_draw_pattern(&blinker_2, cur_row, cur_col, state, padded_width, colors);        
+    cur_row += 6;
+    life_draw_pattern(&toad_1, cur_row, cur_col, state, padded_width, colors);        
+    cur_row += 6;
+
+    cur_row = 5;
+    cur_col = 16;
+    life_draw_pattern(&beacon_1, cur_row, cur_col, state, padded_width, colors);        
+    cur_row += 16;
+    life_draw_pattern(&pulsar_1, cur_row, cur_col, state, padded_width, colors);  
+
+    cur_row = 5;
+    cur_col = 30;
+    life_draw_pattern(&glider_1, cur_row, cur_col, state, padded_width, colors);        
 }
 
 /*
