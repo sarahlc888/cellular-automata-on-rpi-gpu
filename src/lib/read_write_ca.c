@@ -74,7 +74,8 @@ int recursive_scan(const char* path)
     return count;
 }
 
-void print_color_buf(color_t buf[], unsigned int num_entries)
+// print function for debugging purposes
+static void print_color_buf(color_t buf[], unsigned int num_entries)
 {
     for (int i = 0; i < num_entries; i++) {
         printf("%x ", buf[i]);
@@ -82,6 +83,7 @@ void print_color_buf(color_t buf[], unsigned int num_entries)
     printf("\n");
 }
 
+// delete the specified file
 void remove_preset(const char *fname)
 {
     FRESULT res;
@@ -97,6 +99,8 @@ void remove_preset(const char *fname)
     printf("Removed file %s.\n",fname);
 }
 
+// TODO: make read and write less verbose in terms of printing
+// write the given preset array to the file name
 void write_preset(color_t writebuf[], unsigned int buf_bytes, const char *fname)
 {
     FRESULT res;
@@ -123,11 +127,12 @@ void write_preset(color_t writebuf[], unsigned int buf_bytes, const char *fname)
         return;
     }
     printf("Wrote %d bytes to file %s:\n---\n", nwritten, fname); 
-    print_color_buf(writebuf, buf_bytes / 4);
+    // print_color_buf(writebuf, buf_bytes / 4);
     printf("---\n"); 
     f_close(&fp);   // close file (should commit to media)
 }
 
+// read the given preset array from the file name
 void read_preset(color_t readbuf[], unsigned int buf_bytes, const char *fname)
 {
     FRESULT res;
@@ -161,7 +166,7 @@ void read_preset(color_t readbuf[], unsigned int buf_bytes, const char *fname)
         return;
     }
     printf("Read %d bytes from file %s:\n---\n", nread, fname); 
-    print_color_buf(readbuf, buf_bytes / 4);
+    // print_color_buf(readbuf, buf_bytes / 4);
     printf("---\n"); 
 
 
@@ -179,7 +184,7 @@ int make_dir(const char *path)
     return 0;   
 }
 
-
+// initialize file system
 void ca_ffs_init(FATFS *fs)
 {
     FRESULT res = f_mount(fs, "", 1);
@@ -217,22 +222,3 @@ void run_tests(void)
     remove_preset("/presets/curiously_long_filename.rgba");
     n = recursive_scan("/"); // start at root
 }
-
-
-// void run_tests(void) 
-// {
-//     uart_init();
-//     printf("Starting libpisd.a test\n");
-
-//     FATFS fs;
-//     FRESULT res = f_mount(&fs, "", 1);
-//     if (res != FR_OK) {
-//         printf("Could not mount internal SD card. Error: %s\n", ff_err_msg(res));
-//         return;
-//     }
-
-//     int n = recursive_scan(""); // start at root
-//     printf("Scan found %d entries.\n\n", n);
-
-//     uart_putchar(EOT);
-// }

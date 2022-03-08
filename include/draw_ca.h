@@ -3,6 +3,12 @@
 
 #include "gl.h"
 
+// todo: make this a typedef
+typedef enum {
+    WW_OR = 0,
+    WW_AND = 1,
+    WW_XOR = 2
+} gate_ind_t;
 
 typedef struct {
     unsigned int width;
@@ -13,14 +19,10 @@ typedef struct {
     unsigned int gate_data[];
 } gate_t;
 
-void ww_draw_gate(gate_t gate_type, int r, int c, unsigned int gate_tail_length,
-    unsigned int input1, unsigned int input2,
-    void *state, unsigned int fb_padded_width, color_t* colors);
+// type of function pointer used to create a preset
+typedef unsigned int (*preset_fn_t)(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 
-void ww_draw_row_wire(int r, int c, int wire_length, 
-    void *state, unsigned int fb_padded_width, color_t* colors);
-
-void life_draw_osc(int r, int c, 
-    void *state, unsigned int fb_padded_width, color_t* colors);
+void create_life_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+void create_ww_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 
 #endif

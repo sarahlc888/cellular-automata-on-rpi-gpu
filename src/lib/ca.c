@@ -1,24 +1,29 @@
-/*
+/* Sarah Chen
+ * 03/08/2022
  * Code for CS107E Final Project
- *
- * Sarah Chen
  * 
- * Module currently supports a basic game of life cellular automata.
+ * This module supports representation and simulation of cellular automata. 
  * 
- * TODO: could support rule tables 
- * https://github.com/GollyGang/ruletablerepository/blob/gh-pages/src/read_ruletable.cpp
- * http://www.mirekw.com/ca/rullex_rtab.html 
+ * Currently supported automata:
+ * - The Game of Life
+ * - WireWorld
  * 
- * TODO: borders -- need to make this bigger than the space ? to simulate infinity?
+ * Currently, the state is directly stored within the frame buffers. The frame buffer
+ * is double-buffered, so the code considers one buffer at a time to edit the other.
+ * States are therefore implicitly represented as colors, and an arbitrary number of 
+ * states are supported because they depend on a client-specified color array.
  * 
- * Design choice was: don't malloc the state, just implicitly store the state in the 
- * frame buffers. Consider one and edit the other, making states and colors identical,
- * to avoid having 2 other prev/next buffers as well.
+ * Another approach would require having 2 further arrays to represent states, which
+ * are then copied into the framebuffer. So far, this has not seemed to be necessary.
  * 
- * TODO: Langston's loop. 
- * - support multiple states using the colors array rather than separate on/off variables.
- * - support more granular neighbor information (which neighbors are on)
- * - operate based on rule table to simplify implementation?
+ * Possible additions to the module, if time allows:
+ * - Correct behavior at borders -- need to make this bigger than the space ? to simulate infinity?
+ *   (currently, behavior is WRONG when hitting the borders because there is no bounds catching)
+ * - Add further CA
+ *      - Support rule tables (http://www.mirekw.com/ca/rullex_rtab.html)
+ *        (https://github.com/GollyGang/ruletablerepository/blob/gh-pages/src/read_ruletable.cpp)
+ *      - Add Langston's Loop or another loop CA
+ *      - Possibly support more granular neighbor information (which neighbors are on), if necessary
  */
 
 #include "timer.h"
@@ -26,10 +31,11 @@
 #include "gl.h"
 #include "printf.h"
 #include "malloc.h"
+#include "../../include/draw_ca.h"
 #include "../../include/ca.h"
 #include "../../include/read_write_ca.h"
-#include "../../include/draw_ca.h"
 
+// struct to store information about the current cellular automata simulation
 typedef struct {
     unsigned int mode;          // which cellular automata to run
 
@@ -38,7 +44,7 @@ typedef struct {
     unsigned int padded_width;  // width of the physical screen plus padding
     color_t* state_colors;      // colors for various states
 
-    unsigned int update_ms;   // ms between state updates
+    unsigned int update_ms;     // ms between state updates
 
     // pointers to the framebuffer
     unsigned int *cur_state;
@@ -47,8 +53,10 @@ typedef struct {
 } ca_config_t;
 
 
-static volatile ca_config_t ca; // TODO: why volatile?
+static volatile ca_config_t ca; // TODO: is volatile necessary? will something else change the code?
 
+// CA mode table links titles, styled titles, and update functions
+// TODO: why do I need these titles?
 static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c, void *state);
 static unsigned int wireworld_update_pix(unsigned int r, unsigned int c, void *state);
 static const ca_option_t ca_modes[] = {
@@ -56,19 +64,20 @@ static const ca_option_t ca_modes[] = {
     {"wireworld",   "WireWorld!",   wireworld_update_pix},
 };
 
-
 /*
  * Function: ca_init
  * --------------------------
+ * Initialize a cellular automaton simulation with mode `ca_mode_t`.
+ * Specify the screen dimensions `screen_width` and `screen_height`.
+ * Specify the `colors` used in the automaton.
  * The first color passed in `colors` is presumed to be the background color.
+ * Specify the `update_delay` in milliseconds.
  */
-void ca_init(unsigned int ca_mode, 
-    unsigned int screen_width, unsigned int screen_height, int num_states,
+void ca_init(ca_mode_t ca_mode, 
+    unsigned int screen_width, unsigned int screen_height, 
     color_t* colors,
     unsigned int update_delay)
 {
-    // TODO: specify mode by string?
-
     gl_init(screen_width, screen_height, GL_DOUBLEBUFFER); // initialize frame buffer
 
     // init all pixels to background color (in both buffers)
@@ -90,42 +99,53 @@ void ca_init(unsigned int ca_mode,
 
 }
 
-// save the current state of the framebuffer
+/*
+ * Function: save_state
+ * --------------------------
+ * Save the given `state` of the framebuffer to the file `fname`. Strip
+ * padding before writing.
+ * 
+ * Note: ca_ffs_init() must be called before hand. TODO: add a check? move this to 
+ * read_write_ca?
+ */
 void save_state(const char *fname, void *state)
 {
 
-    int n = recursive_scan(""); // start at root
-    printf("Scan found %d entries.\n\n", n);
+    // int n = recursive_scan(""); // start at root
+    // printf("Scan found %d entries.\n\n", n);
 
-    // color_t writebuf[] = (color_t *) ca.cur_state; // TODO: choose unsigned int or color_t and be consistent
     // TODO: choose unsigned int or color_t and be consistent
+    // TODO: remove these failed options
+    // color_t writebuf[] = (color_t *) ca.cur_state; 
     // color_t *writebuf = (color_t *) ca.cur_state; 
 
-    // TODO: remove padding from buffer before writing
+    // remove padding from buffer before writing
     unsigned int (*state_2d)[ca.padded_width] = state;
     unsigned int bytes = 4 * ca.width * ca.height;
-    void *writebuf = malloc(bytes); // TODO: use the heap because of dynamic size?
-    // TODO: best practice w void *?
+    void *writebuf = malloc(bytes); // TODO: use the heap because of dynamic size? TODO: best practice w void *?
     color_t (*writebuf_2d)[ca.width] = writebuf;
-
     for (int i = 0; i < ca.height; i++) {
         for (int j = 0; j < ca.width; j++) {
             writebuf_2d[i][j] = state_2d[i][j];
         }
     }
-
     write_preset(writebuf, bytes, fname);
-
     free(writebuf);
 }
 
-// read the preset into the cur_state
-// TODO: handle padding (don't write it but handle its lack while reading it)
-// TODO: call ca_ffs_init before
+/*
+ * Function: load_preset
+ * --------------------------
+ * Read the preset from the file `fname` into the given `state` of the framebuffer.
+ * Write using the appropriate padding for the framebuffer.
+ * 
+ * Note: ca_ffs_init() must be called before hand. TODO: add a check? move this to 
+ * read_write_ca?
+ */
 void load_preset(const char *fname, void *state)
 {
-    int n = recursive_scan(""); // start at root
-    printf("Scan found %d entries.\n\n", n);
+    // int n = recursive_scan(""); // start at root
+    // printf("Scan found %d entries.\n\n", n);
 
     unsigned int bytes = 4 * ca.width * ca.height;
     color_t readbuf[bytes];
@@ -137,36 +157,6 @@ void load_preset(const char *fname, void *state)
     for (int c = 0; c < ca.height; c++) {
         for (int r = 0; r < ca.width; r++) {
             state_2d[r][c] = readbuf_2d[r][c];
-        }
-    }
-
-    printf("Finished reading\n");
-    // // show the buffer for ca.next_state
-    // gl_swap_buffer();
-    // // make ca.next_state the ca.cur_state
-    // ca.cur_state = ca.next_state;
-}
-
-/*
- * Function: create_initial_state
- * --------------------------
- * This function populates `state` with an initial test state.
- * 
- * TODO: read initial state from a file.
- */
-void create_initial_state(void *state, color_t on_state_color)
-{
-    // ww_draw_or_gate(10, 10, 4, 1, 0, state, ca.padded_width, ca.state_colors);
-    // return; 
-
-    for (int i = 5; i < ca.width - 5; i += 5) {
-        if (ca.mode == 1) {
-            ww_draw_row_wire(i, 10, ca.width - 20, state, ca.padded_width, ca.state_colors);
-        }
-        if (ca.mode == 0) {
-            for (int j = 5; j < ca.height - 5; j += 5) {
-                life_draw_osc(i, j, state, ca.padded_width, ca.state_colors);
-            }
         }
     }
 }
@@ -216,7 +206,15 @@ static unsigned int count_neighbors_von_neumann(unsigned int r, unsigned int c, 
     return target_count;
 }
 
-// https://mathworld.wolfram.com/WireWorld.html
+/*
+ * Function: wireworld_update_pix
+ * --------------------------
+ * Handle pixel update for (`r`, `c`) in `state` for WireWorld.
+ * 
+ * Reference: https://mathworld.wolfram.com/WireWorld.html
+ * 
+ * TODO: move to its own module? move to draw_ca module?
+ */
 static unsigned int wireworld_update_pix(unsigned int r, unsigned int c, void *state) 
 {
     unsigned int (*state_2d)[ca.padded_width] = state;
@@ -248,9 +246,7 @@ static unsigned int wireworld_update_pix(unsigned int r, unsigned int c, void *s
  * `ca.state_colors[1]` and `ca.state_colors[0]` respectively specify the colors 
  * of live and dead cells.
  * 
- * TODO: I should probably decompose further so that the states are not determined
- * by the colors. I should probably malloc rather than keeping everything implicit
- * in the framebuffers.
+ * TODO: move to its own module? move to draw_ca module?
  */
 static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c, void *state) 
 {
@@ -281,7 +277,8 @@ static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c, void
 /*
  * Function: update_state
  * --------------------------
- * This function updates the state of the cellular automata by one step.
+ * This function updates the state of the cellular automata by one step using
+ * the appropriate update function (specified by ca.mode).
  */
 static void update_state(unsigned int *prev, void *next)
 {
@@ -302,22 +299,34 @@ static void update_state(unsigned int *prev, void *next)
 }
 
 /*
+ * Function: ca_create_and_load_preset
+ * --------------------------
+ * This function creates a preset using the given function `make_preset` in file `fname`.
+ * 
+ * It must be preceded by a call to `ca_init()`.
+ * 
+ * If the given `fname` exists, it will be overwritten.
+ */
+void ca_create_and_load_preset(const char* fname, preset_fn_t make_preset)
+{
+    ca.cur_state = fb_get_draw_buffer();
+    make_preset(ca.width, ca.height, ca.padded_width, ca.cur_state, ca.state_colors);
+    save_state(fname, ca.cur_state); 
+}
+
+/*
  * Function: ca_run
  * --------------------------
  * This function runs a cellular automata loop that never returns.
  * 
- * It must be preceded by a call to `ca_init()`.
+ * It must be preceded by a call to `ca_init()` because that contains `ca_ffs_init()`.
+ * 
+ * It should also be preceded by a function that loads a preset.
  */
 void ca_run(void)
 {
-    
-    // load and display the initial state
+    // display the initial state
     ca.cur_state = fb_get_draw_buffer();
-    load_preset("/presets/test_preset.rgba", ca.cur_state);
-    // create_initial_state(ca.cur_state, ca.state_colors[1]); 
-    // save_state("/presets/test_preset.rgba", ca.cur_state); // The code used to create the preset
-
-    // printf("inital state is ca.cur_state %p\n", ca.cur_state);
     gl_swap_buffer(); 
 
     while (1)
@@ -326,7 +335,8 @@ void ca_run(void)
 
         // retrieve buffer for the next state
         ca.next_state = fb_get_draw_buffer();
-        printf("updating. ca.cur_state %p, ca.next_state %p\n", ca.cur_state, ca.next_state);
+        printf("|");
+        // printf("updating. ca.cur_state %p, ca.next_state %p\n", ca.cur_state, ca.next_state);
         update_state(ca.cur_state, ca.next_state);
 
         // show the buffer for ca.next_state

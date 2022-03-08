@@ -4,7 +4,12 @@
 ## Team members
 
 ## Project description
-
+### Components
+- CA representation library
+- FAT FS support for reading/writing states
+- Hardware
+- SPI
+- GPU
 ## Member contribution
 A short description of the work performed by each member of the team.
 

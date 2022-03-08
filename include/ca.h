@@ -2,12 +2,11 @@
 #define CA_H
 
 #include "gl.h"
+#include "draw_ca.h"
 
 // cellular automata modes supported
-enum {
-    LIFE = 0,
-    WIREWORLD = 1
-};
+typedef enum { LIFE = 0, WIREWORLD = 1 } ca_mode_t;
+
 /*
  * This typedef gives a nickname to the type of function pointer used as the
  * automata simulator.  A ca_fn_t function has two parameters, the array
@@ -26,10 +25,12 @@ typedef struct _ca_option_struct {
     ca_fn_t fn;
 } ca_option_t;
 
-void ca_init(unsigned int ca_mode, 
-    unsigned int screen_width, unsigned int screen_height, int num_states,
+void ca_init(ca_mode_t ca_mode, 
+    unsigned int screen_width, unsigned int screen_height, 
     color_t* colors,
     unsigned int update_delay);
+
+void ca_create_and_load_preset(const char* fname, preset_fn_t make_preset);
 
 void ca_run(void);
 
