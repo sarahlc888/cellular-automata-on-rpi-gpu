@@ -4,8 +4,8 @@
 #include "printf.h"
 #include "strings.h"
 #include "uart.h"
-#include "ff.h"
 #include "gl.h"
+#include "ff.h"
 
 // copied from $CS107E/examples/sd_fatfs
 static const char *name_of(FILINFO *f)
@@ -35,7 +35,7 @@ static void print_fileinfo(FILINFO *f, const char *dir)
 }
 
 // copied from $CS107E/examples/sd_fatfs
-static int recursive_scan(const char* path)
+int recursive_scan(const char* path)
 {
     FRESULT res;
     DIR dir;
@@ -82,8 +82,22 @@ void print_color_buf(color_t buf[], unsigned int num_entries)
     printf("\n");
 }
 
-// adapted from $CS107E/examples/sd_fatfs
-static void test_read_write(color_t writebuf[], color_t readbuf[], unsigned int bufsize, const char *fname)
+void remove_preset(const char *fname)
+{
+    FRESULT res;
+
+    // remove the file
+    // see http://elm-chan.org/fsw/ff/doc/unlink.html
+    // for information about the f_unlink function
+    res = f_unlink(fname);
+    if (res != FR_OK) {
+        printf("Could not remove file %s. Error: %s\n",fname, ff_err_msg(res));
+        return;
+    }
+    printf("Removed file %s.\n",fname);
+}
+
+void write_preset(color_t writebuf[], unsigned int buf_bytes, const char *fname)
 {
     FRESULT res;
 
@@ -102,16 +116,22 @@ static void test_read_write(color_t writebuf[], color_t readbuf[], unsigned int 
     // see http://elm-chan.org/fsw/ff/doc/write.html
     // for information about the f_write function
     unsigned int nwritten;
-    res = f_write(&fp, writebuf, bufsize, &nwritten);
-    if (res != FR_OK || nwritten != bufsize) {
+    res = f_write(&fp, writebuf, buf_bytes, &nwritten);
+    if (res != FR_OK || nwritten != buf_bytes) {
         printf("Could not write to file %s. Error: %s\n", fname, ff_err_msg(res));
         f_close(&fp);
         return;
     }
     printf("Wrote %d bytes to file %s:\n---\n", nwritten, fname); 
-    print_color_buf(writebuf, bufsize / 4);
+    print_color_buf(writebuf, buf_bytes / 4);
     printf("---\n"); 
     f_close(&fp);   // close file (should commit to media)
+}
+
+void read_preset(color_t readbuf[], unsigned int buf_bytes, const char *fname)
+{
+    FRESULT res;
+    FIL fp;
 
     // we are going to read the entire file, so we can use the f_stat function 
     // to get the file length, and we can also use this to determine if the file exists
@@ -121,7 +141,7 @@ static void test_read_write(color_t writebuf[], color_t readbuf[], unsigned int 
         printf("Could not stat file %s. Error: %s\n", fname, ff_err_msg(res));
         return;
     } else {
-        printf("ls %s (file size should be %d bytes, date/time is bunk)\n", fname, nwritten);
+        printf("ls %s (file size should be %d bytes, date/time is bunk)\n", fname, buf_bytes);
         print_fileinfo(&fi, "");
     }
 
@@ -135,34 +155,19 @@ static void test_read_write(color_t writebuf[], color_t readbuf[], unsigned int 
     // see http://elm-chan.org/fsw/ff/doc/read.html
     // for information about the f_read function
     unsigned int nread;
-    res = f_read(&fp, readbuf, bufsize, &nread);
-    if (res != FR_OK || nread != bufsize) {
+    res = f_read(&fp, readbuf, buf_bytes, &nread);
+    if (res != FR_OK || nread != buf_bytes) {
         printf("Could not read from file %s. Error: %s\n",fname, ff_err_msg(res));
         return;
     }
     printf("Read %d bytes from file %s:\n---\n", nread, fname); 
-    print_color_buf(readbuf, bufsize / 4);
+    print_color_buf(readbuf, buf_bytes / 4);
     printf("---\n"); 
 
 
-    int n = recursive_scan(""); // start at root
-    printf("Scan found %d entries.\n\n", n);
-
-    // remove the file
-    // see http://elm-chan.org/fsw/ff/doc/unlink.html
-    // for information about the f_unlink function
-    res = f_unlink(fname);
-    if (res != FR_OK) {
-        printf("Could not remove file %s. Error: %s\n",fname, ff_err_msg(res));
-        return;
-    }
-    printf("Removed file %s.\n",fname);
-
-    n = recursive_scan(""); // start at root
-    printf("Scan found %d entries.\n\n", n);
 }
 
-static int make_dir(const char *path)
+int make_dir(const char *path)
 {
     FRESULT res;
     res = f_mkdir(path);       
@@ -174,31 +179,60 @@ static int make_dir(const char *path)
     return 0;   
 }
 
+
+void ca_ffs_init(FATFS *fs)
+{
+    FRESULT res = f_mount(fs, "", 1);
+    if (res != FR_OK) {
+        printf("Could not mount internal SD card. Error: %s\n", ff_err_msg(res));
+        return;
+    }
+
+}
+
 // adapted from $CS107E/examples/sd_fatfs
 void run_tests(void) 
 {
     uart_init();
     printf("Starting libpisd.a test\n");
 
-    FATFS fs;
-    FRESULT res = f_mount(&fs, "", 1);
-    if (res != FR_OK) {
-        printf("Could not mount internal SD card. Error: %s\n", ff_err_msg(res));
-        return;
-    }
+    printf("initializing\n");
 
+    // TODO: does not work when using ca_ffs_init, probably
+    FATFS fs;
+    ca_ffs_init(&fs);
+
+    printf("scanning\n");
     int n = recursive_scan(""); // start at root
     printf("Scan found %d entries.\n\n", n);
 
-    // make_dir("/presets");
-    // printf("DONE WITH MKDIR\n");
-
-    n = recursive_scan(""); // start at root
+    make_dir("/presets");
 
     color_t writebuf[] = {GL_BLACK, GL_WHITE, GL_RED, GL_ORANGE};
     unsigned int bytes = sizeof writebuf;
     color_t readbuf[bytes];
-    test_read_write(writebuf, readbuf, bytes, "/presets/curiously_long_filename.rgba");
-
-    uart_putchar(EOT);
+    write_preset(writebuf, bytes, "/presets/curiously_long_filename.rgba");
+    read_preset(readbuf, bytes, "/presets/curiously_long_filename.rgba");
+    n = recursive_scan("/"); // start at root
+    remove_preset("/presets/curiously_long_filename.rgba");
+    n = recursive_scan("/"); // start at root
 }
+
+
+// void run_tests(void) 
+// {
+//     uart_init();
+//     printf("Starting libpisd.a test\n");
+
+//     FATFS fs;
+//     FRESULT res = f_mount(&fs, "", 1);
+//     if (res != FR_OK) {
+//         printf("Could not mount internal SD card. Error: %s\n", ff_err_msg(res));
+//         return;
+//     }
+
+//     int n = recursive_scan(""); // start at root
+//     printf("Scan found %d entries.\n\n", n);
+
+//     uart_putchar(EOT);
+// }

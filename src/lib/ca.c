@@ -21,11 +21,14 @@
  * - operate based on rule table to simplify implementation?
  */
 
-#include "../../include/ca.h"
 #include "timer.h"
 #include "fb.h"
 #include "gl.h"
 #include "printf.h"
+#include "malloc.h"
+#include "../../include/ca.h"
+#include "../../include/read_write_ca.h"
+#include "../../include/draw_ca.h"
 
 typedef struct {
     unsigned int mode;          // which cellular automata to run
@@ -36,6 +39,11 @@ typedef struct {
     color_t* state_colors;      // colors for various states
 
     unsigned int update_ms;   // ms between state updates
+
+    // pointers to the framebuffer
+    unsigned int *cur_state;
+    unsigned int *next_state;
+
 } ca_config_t;
 
 
@@ -77,71 +85,66 @@ void ca_init(unsigned int ca_mode,
     ca.height = screen_height;
     ca.update_ms = update_delay; 
 
+    // init file system
+    ca_ffs_init();
+
 }
 
-// TODO: move these into their own module
-void make_wireworld_or_gate(int r, int c, void *state, unsigned int gate_tail_length, unsigned int input1, unsigned int input2)
+// save the current state of the framebuffer
+void save_state(const char *fname, void *state)
 {
-    
-    const int gate_height = 5;
-    const int gate_width = 3; // width of gate itself
-    const int in_tail_r1 = 1; // row of 1st input tail
-    const int in_tail_r2 = 3; // row of 1st input tail
-    const int out_tail_r = 2; // row of output tail
 
+    int n = recursive_scan(""); // start at root
+    printf("Scan found %d entries.\n\n", n);
+
+    // color_t writebuf[] = (color_t *) ca.cur_state; // TODO: choose unsigned int or color_t and be consistent
+    // TODO: choose unsigned int or color_t and be consistent
+    // color_t *writebuf = (color_t *) ca.cur_state; 
+
+    // TODO: remove padding from buffer before writing
     unsigned int (*state_2d)[ca.padded_width] = state;
+    unsigned int bytes = 4 * ca.width * ca.height;
+    void *writebuf = malloc(bytes); // TODO: use the heap because of dynamic size?
+    // TODO: best practice w void *?
+    color_t (*writebuf_2d)[ca.width] = writebuf;
 
-    // make input
-    unsigned int base_col = c;
-    for (int j = 0; j < gate_tail_length; j++) {
-        state_2d[r + in_tail_r1][base_col + j] = ca.state_colors[3];
-        state_2d[r + in_tail_r2][base_col + j] = ca.state_colors[3];
-    }
-    base_col += gate_tail_length;
-
-    // make gate
-    state_2d[r][base_col] = ca.state_colors[3];
-    state_2d[r + 4][base_col] = ca.state_colors[3];
-    state_2d[r][base_col + 1] = ca.state_colors[3];
-    state_2d[r + 2][base_col + 1] = ca.state_colors[3];
-    state_2d[r + 4][base_col + 1] = ca.state_colors[3];
-    state_2d[r + 1][base_col + 2] = ca.state_colors[3];
-    state_2d[r + 2][base_col + 2] = ca.state_colors[3];
-    state_2d[r + 3][base_col + 2] = ca.state_colors[3];
-    base_col += gate_width;
-
-    // make output tail
-    for (int j = 0; j < gate_tail_length; j++) {
-        state_2d[r + out_tail_r][base_col + j] = ca.state_colors[3];
+    for (int i = 0; i < ca.height; i++) {
+        for (int j = 0; j < ca.width; j++) {
+            writebuf_2d[i][j] = state_2d[i][j];
+        }
     }
 
-    // make electrons
-    if (input1) {
-        state_2d[r + in_tail_r1][c + 1] = ca.state_colors[1]; // head
-        state_2d[r + in_tail_r1][c] = ca.state_colors[2]; // tail
-    }
-    if (input2) {
-        state_2d[r + in_tail_r2][c + 1] = ca.state_colors[1]; // head
-        state_2d[r + in_tail_r2][c] = ca.state_colors[2]; // tail
-    }
-}
-void make_row_wire(int r, int c, void *state)
-{
-    unsigned int (*state_2d)[ca.padded_width] = state;
-    for (int j = c; j < ca.height - 5; j++) {
-        state_2d[r][j] = ca.state_colors[3];
-    }
-    state_2d[r][c + 1] = ca.state_colors[1]; // head
-    state_2d[r][c] = ca.state_colors[2]; // tail
+    write_preset(writebuf, bytes, fname);
+
+    free(writebuf);
 }
 
-void make_osc(int r, int c, void *state, color_t on_state_color)
+// read the preset into the cur_state
+// TODO: handle padding (don't write it but handle its lack while reading it)
+// TODO: call ca_ffs_init before
+void load_preset(const char *fname, void *state)
 {
-    unsigned int (*state_2d)[ca.padded_width] = state;
+    int n = recursive_scan(""); // start at root
+    printf("Scan found %d entries.\n\n", n);
 
-    state_2d[r][c - 1] = on_state_color;
-    state_2d[r][c] = on_state_color;
-    state_2d[r][c + 1] = on_state_color;
+    unsigned int bytes = 4 * ca.width * ca.height;
+    color_t readbuf[bytes];
+    read_preset(readbuf, bytes, fname);
+
+    // copy into the next frame buffer, then swap and update
+    color_t (*readbuf_2d)[ca.width] = &readbuf; // TODO: is this right?
+    unsigned int (*state_2d)[ca.padded_width] = state; 
+    for (int c = 0; c < ca.height; c++) {
+        for (int r = 0; r < ca.width; r++) {
+            state_2d[r][c] = readbuf_2d[r][c];
+        }
+    }
+
+    printf("Finished reading\n");
+    // // show the buffer for ca.next_state
+    // gl_swap_buffer();
+    // // make ca.next_state the ca.cur_state
+    // ca.cur_state = ca.next_state;
 }
 
 /*
@@ -153,16 +156,16 @@ void make_osc(int r, int c, void *state, color_t on_state_color)
  */
 void create_initial_state(void *state, color_t on_state_color)
 {
-    // make_wireworld_or_gate(10, 10, state, 4, 1, 0);
-    // return; // TODO: remove
+    // ww_draw_or_gate(10, 10, 4, 1, 0, state, ca.padded_width, ca.state_colors);
+    // return; 
 
     for (int i = 5; i < ca.width - 5; i += 5) {
         if (ca.mode == 1) {
-            make_row_wire(i, 10, state);
+            ww_draw_row_wire(i, 10, ca.width - 20, state, ca.padded_width, ca.state_colors);
         }
         if (ca.mode == 0) {
             for (int j = 5; j < ca.height - 5; j += 5) {
-                make_osc(i, j, state, on_state_color);
+                life_draw_osc(i, j, state, ca.padded_width, ca.state_colors);
             }
         }
     }
@@ -282,6 +285,8 @@ static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c, void
  */
 static void update_state(unsigned int *prev, void *next)
 {
+    unsigned int (*state_2d)[ca.padded_width] = next;
+
     // update each pixel
     for (int c = 0; c < ca.height; c++) {
         for (int r = 0; r < ca.width; r++) {
@@ -290,7 +295,6 @@ static void update_state(unsigned int *prev, void *next)
             // TODO: move this outside the loop?
             unsigned int new_state = ca_modes[ca.mode].fn(r, c, prev);
             // write pixel in next
-            unsigned int (*state_2d)[ca.padded_width] = next;
             state_2d[r][c] = new_state;
         }
     }
@@ -306,13 +310,14 @@ static void update_state(unsigned int *prev, void *next)
  */
 void ca_run(void)
 {
-    unsigned int *cur_state;
-    unsigned int *next_state;
-
+    
     // load and display the initial state
-    cur_state = fb_get_draw_buffer();
-    create_initial_state(cur_state, ca.state_colors[1]); // TODO: implement this
-    // printf("inital state is cur_state %p\n", cur_state);
+    ca.cur_state = fb_get_draw_buffer();
+    load_preset("/presets/test_preset.rgba", ca.cur_state);
+    // create_initial_state(ca.cur_state, ca.state_colors[1]); 
+    // save_state("/presets/test_preset.rgba", ca.cur_state); // The code used to create the preset
+
+    // printf("inital state is ca.cur_state %p\n", ca.cur_state);
     gl_swap_buffer(); 
 
     while (1)
@@ -320,12 +325,13 @@ void ca_run(void)
         timer_delay_ms(ca.update_ms);
 
         // retrieve buffer for the next state
-        next_state = fb_get_draw_buffer();
-        printf("updating. cur_state %p, next_state %p\n", cur_state, next_state);
-        update_state(cur_state, next_state);
+        ca.next_state = fb_get_draw_buffer();
+        printf("updating. ca.cur_state %p, ca.next_state %p\n", ca.cur_state, ca.next_state);
+        update_state(ca.cur_state, ca.next_state);
 
-        // show the buffer and make next_state the cur_state
+        // show the buffer for ca.next_state
         gl_swap_buffer();
-        cur_state = next_state;
+        // make ca.next_state the ca.cur_state
+        ca.cur_state = ca.next_state;
     }
 }

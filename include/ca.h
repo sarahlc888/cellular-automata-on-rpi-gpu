@@ -3,6 +3,11 @@
 
 #include "gl.h"
 
+// cellular automata modes supported
+enum {
+    LIFE = 0,
+    WIREWORLD = 1
+};
 /*
  * This typedef gives a nickname to the type of function pointer used as the
  * automata simulator.  A ca_fn_t function has two parameters, the array
