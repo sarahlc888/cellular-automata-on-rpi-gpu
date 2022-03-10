@@ -173,15 +173,20 @@ static unsigned int count_neighbors_moore(unsigned int r, unsigned int c, unsign
 
     unsigned int target_count = 0;
 
-    target_count += (state_2d[r][c + 1] == state_to_count);
-    target_count += (state_2d[r + 1][c] == state_to_count);
-    target_count += (state_2d[r][c - 1] == state_to_count);
-    target_count += (state_2d[r - 1][c] == state_to_count);
+    unsigned int next_col = (c + 1) % ca.width;
+    unsigned int prev_col = (c - 1 + ca.width) % ca.width;
+    unsigned int next_row = (r + 1) % ca.height;
+    unsigned int prev_row = (r - 1 + ca.height) % ca.height;
 
-    target_count += (state_2d[r - 1][c - 1] == state_to_count);
-    target_count += (state_2d[r - 1][c + 1] == state_to_count);
-    target_count += (state_2d[r + 1][c - 1] == state_to_count);
-    target_count += (state_2d[r + 1][c + 1] == state_to_count);
+    target_count += (state_2d[r][next_col] == state_to_count);
+    target_count += (state_2d[prev_row][c] == state_to_count);
+    target_count += (state_2d[r][prev_col] == state_to_count);
+    target_count += (state_2d[next_row][c] == state_to_count);
+
+    target_count += (state_2d[prev_row][prev_col] == state_to_count);
+    target_count += (state_2d[prev_row][next_col] == state_to_count);
+    target_count += (state_2d[next_row][prev_col] == state_to_count);
+    target_count += (state_2d[next_row][next_col] == state_to_count);
 
     return target_count;
 }
@@ -198,10 +203,10 @@ static unsigned int count_neighbors_von_neumann(unsigned int r, unsigned int c, 
 
     unsigned int target_count = 0;
 
-    target_count += (state_2d[r][c + 1] == state_to_count);
-    target_count += (state_2d[r + 1][c] == state_to_count);
-    target_count += (state_2d[r][c - 1] == state_to_count);
-    target_count += (state_2d[r - 1][c] == state_to_count);
+    target_count += (state_2d[r][(c + 1) % ca.width] == state_to_count);
+    target_count += (state_2d[(r + 1) % ca.height][c] == state_to_count);
+    target_count += (state_2d[r][(c - 1 + ca.width) % ca.width] == state_to_count);
+    target_count += (state_2d[(r - 1 + ca.height) % ca.height][c] == state_to_count);
 
     return target_count;
 }
@@ -252,6 +257,7 @@ static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c, void
 {
     unsigned int (*state_2d)[ca.padded_width] = state;
     unsigned int cell_state = state_2d[r][c];
+
     unsigned int live_neighbors = count_neighbors_moore(r, c, ca.state_colors[1], state);
 
 
@@ -301,17 +307,20 @@ static void update_state(unsigned int *prev, void *next)
 /*
  * Function: ca_create_and_load_preset
  * --------------------------
- * This function creates a preset using the given function `make_preset` in file `fname`.
+ * This function creates a preset using the given function `make_preset`. 
+ * If `save_preset`, the preset is saved in file `fname`.
  * 
  * It must be preceded by a call to `ca_init()`.
  * 
  * If the given `fname` exists, it will be overwritten.
  */
-void ca_create_and_load_preset(const char* fname, preset_fn_t make_preset)
+void ca_create_and_load_preset(const char* fname, preset_fn_t make_preset, unsigned int save_to_sd)
 {
     ca.cur_state = fb_get_draw_buffer();
     make_preset(ca.width, ca.height, ca.padded_width, ca.cur_state, ca.state_colors);
-    save_state(fname, ca.cur_state); 
+    if (save_to_sd) {
+        save_state(fname, ca.cur_state); 
+    }
 }
 
 /*
@@ -323,26 +332,35 @@ void ca_create_and_load_preset(const char* fname, preset_fn_t make_preset)
  * 
  * It should also be preceded by a function that loads a preset.
  */
-void ca_run(unsigned int ticks_to_run)
+void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run)
 {
     // display the initial state
     ca.cur_state = fb_get_draw_buffer();
     gl_swap_buffer(); 
 
     unsigned int start = timer_get_ticks();
-    while (timer_get_ticks() < ticks_to_run + start)
+    unsigned int prev_ticks = timer_get_ticks();
+    unsigned int total_updates = 0;
+    while (!use_time_limit || timer_get_ticks() < ticks_to_run + start)
     {
         timer_delay_ms(ca.update_ms);
 
         // retrieve buffer for the next state
         ca.next_state = fb_get_draw_buffer();
-        printf("|");
+        // printf("|");
+        // printf("%d\n", timer_get_ticks());
         // printf("updating. ca.cur_state %p, ca.next_state %p\n", ca.cur_state, ca.next_state);
-        update_state(ca.cur_state, ca.next_state);
+        update_state(ca.cur_state, ca.next_state); // TODO: this is what would be handled by GPU
+        printf("ticks per update: %d\n", timer_get_ticks() - prev_ticks);
 
         // show the buffer for ca.next_state
         gl_swap_buffer();
         // make ca.next_state the ca.cur_state
         ca.cur_state = ca.next_state;
+
+        prev_ticks = timer_get_ticks();
+        total_updates++;
     }
+
+    printf("total updates: %d\n", total_updates);
 }
