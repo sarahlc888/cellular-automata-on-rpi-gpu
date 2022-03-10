@@ -25,10 +25,6 @@ unsigned int mcp3008_read(enum channel_t channel) {
 
   spi_transfer(tx, rx, 3);
 
-  // for (int i = 0; i < 3; i++) {
-  //   // printf("tx[i] = 0x%x\n", tx[i]);
-  //   printf("rx[%d] = %d\n", i, rx[i]);
-  // }
   rx[1] &= 0b00000011; // dont care about the first 6 bits, since we are still
                        // sending data during this time
   return (rx[1] << 8) | rx[2];
