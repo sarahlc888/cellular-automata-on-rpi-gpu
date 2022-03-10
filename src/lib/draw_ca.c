@@ -13,7 +13,9 @@
 */
 
 #include "../../include/draw_ca.h"
+#include "../../include/randomHardware.h"
 #include "gl.h"
+#include "timer.h"
 #include "printf.h"
 
 gate_t or_gate = {
@@ -269,16 +271,40 @@ static void life_draw_osc(int r, int c,
 }
 
 /*
+ * Function: create_random_life_preset
+ * --------------------------
+ * This function populates `state` with a random preset state for Life.
+ */
+void create_random_life_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors)
+{
+    random_init();
+    timer_delay(3); // allow for adequate time before querying for random numbers
+    unsigned int (*state_2d)[padded_width] = state;
+
+    for (int i = 5; i < width - 5; i++) {
+        for (int j = 5; j < height - 5; j++) {
+            // get a number between 0 and 5
+            unsigned int num = random_getNumber(0, 100);
+
+            // if number is greater than 4, make the cell alive
+            num %= 5; 
+            if (num >= 3) {
+                state_2d[i][j] = colors[1];
+            }
+        }
+    }
+}
+
+/*
  * Function: create_life_preset
  * --------------------------
- * This function populates `state` with a custom preset state for Life.
+ * This function populates `state` with a random preset state for Life.
  */
 void create_life_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors)
 {
     for (int i = 5; i < width - 5; i += 5) {
         for (int j = 5; j < height - 5; j += 5) {
             life_draw_osc(i, j, state, padded_width, colors);
-            // life_draw_pattern(&blinker_1, i, j, state, padded_width, colors);
         }
     }
 }
