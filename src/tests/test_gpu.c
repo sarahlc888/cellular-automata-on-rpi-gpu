@@ -37,12 +37,13 @@ void main(void)
     qpu_init();
 
     //this is how we include programs
+    // the assembled program is taken directly from https://rpiplayground.wordpress.com/2014/05/03/hacking-the-gpu-for-fun-and-profit-pt-1/
     unsigned program[] = {
         #include "helloworld.c"   
     };
     
     unsigned result_ptr = qpu_malloc(1);
-    unsigned uniforms[] = {112, result_ptr};
+    unsigned uniforms[] = {100, result_ptr};
     
     unsigned * comb_uniforms= (unsigned *) malloc(2 * 4);
     memcpy(comb_uniforms, uniforms, 2);
@@ -60,40 +61,3 @@ void main(void)
     printf("Result: %d\n", *(volatile unsigned *) result_ptr );
     uart_putchar(EOT);
 }
-
-// void main(void)
-// {
-//     uart_init(); 
-//     qpu_init();
-
-//     unsigned program[] = {
-//         #include "helloworld.c"   
-//     };
-    
-//     unsigned result_ptr = qpu_malloc(1);
-//     printf("at %x value %d\n", result_ptr, *((unsigned *)result_ptr));
-//     unsigned uniforms[] = {111, result_ptr};
-    
-//     unsigned * comb_uniforms= (unsigned *) malloc(2 * 4);
-//     memcpy(comb_uniforms, uniforms, 8); // 8 bytes, 2 ints
-//     printf("[0]: %d\n", comb_uniforms[0]);
-//     printf("[1]: %p\n", (void *)comb_uniforms[1]);
-//     printf("[1]: %x\n", comb_uniforms[1]);
-
-//     printf("Requested: %d\n", qpu_request_count());
-//     printf("Completed: %d\n", qpu_complete_count());
-
-//     qpu_run(program, SIZE(program), uniforms, 2);
-    
-//     timer_delay(2);
-
-//     printf("Requested: %d\n", qpu_request_count());
-//     // while (qpu_complete_count() == 0) {}
-//     printf("Completed: %d\n", qpu_complete_count());
-
-//     printf("Result: %d\n", *(volatile unsigned *) result_ptr );
-
-//     qpu_free(result_ptr);
-//     free(comb_uniforms);
-//     uart_putchar(EOT);
-// }
