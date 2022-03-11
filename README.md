@@ -9,7 +9,10 @@
 - FAT FS support for reading/writing states
 - Hardware
 - SPI
-- GPU
+- Performance optimization
+    - CPU speed ups - enabling cache
+    - Fine tuning algorithm using profiler (e.g. test performance using modulo for wrapping vs. ternary conditions)
+    - GPU
 ## Member contribution
 A short description of the work performed by each member of the team.
 
