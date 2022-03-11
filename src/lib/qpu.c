@@ -38,15 +38,6 @@ int qpu_run(unsigned *code, unsigned code_length, unsigned *uniforms, unsigned u
     *((unsigned *) UNIFORMS) = uniform_ptr;
     *((unsigned *) ULENGTH) = uniforms_count;
     *((unsigned *) PROGRAM) = code_ptr;
-    
-    // added by sarah chen
-    // first parameter is a throwaway 
-    // unsigned num_qpus = 2; // up to 12
-    // printf("executing\n");
-
-    // if (execute_qpu(0, num_qpus, code_ptr, 1, 10000)) {
-    //     printf("execute qpu unsuccessful\n");
-    // }
 
     qpu_free(code_ptr);
 

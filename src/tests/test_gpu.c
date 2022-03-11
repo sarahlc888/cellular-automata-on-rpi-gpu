@@ -42,10 +42,10 @@ void main(void)
         #include "helloworld.c"   
     };
     
-    unsigned result_ptr = qpu_malloc(1);
+    unsigned result_ptr = qpu_malloc(16);
     unsigned uniforms[] = {100, result_ptr};
     
-    unsigned * comb_uniforms= (unsigned *) malloc(2 * 4);
+    unsigned * comb_uniforms = (unsigned *) malloc(2 * 4);
     memcpy(comb_uniforms, uniforms, 2);
     
     printf("Requested: %d\n", qpu_request_count());
@@ -59,5 +59,22 @@ void main(void)
     printf("Commpleted: %d\n", qpu_complete_count());
 
     printf("Result: %d\n", *(volatile unsigned *) result_ptr );
+
+    // for (int j=0; j < 16; j++) {
+    //     printf("word %d: %d\n", j, *((unsigned *)(result_ptr + j)));
+    // }
+    uniforms[0] = 200;
+    qpu_run(program, SIZE(program), uniforms, 2);
+    
+    timer_delay(1);
+
+    printf("Requested: %d\n", qpu_request_count());
+    printf("Commpleted: %d\n", qpu_complete_count());
+
+    printf("Result: %d\n", *(volatile unsigned *) result_ptr );
+
+
+    qpu_free(result_ptr);
+    free(comb_uniforms);
     uart_putchar(EOT);
 }

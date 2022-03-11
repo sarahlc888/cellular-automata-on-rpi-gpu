@@ -1,13 +1,13 @@
 # Citation: taken directly from https://rpiplayground.wordpress.com/2014/05/03/hacking-the-gpu-for-fun-and-profit-pt-1/
-# Load the value we want to add to the input into a register
+
+# Load the value we want to add to the input into a register (for general use)
 ldi ra1, 0x1234
 
-# Configure the VPM for writing. "You can find the QPU register address map on pages 37-38 where it shows writing to vw_setup is “VPMVCD_WR_SETUP”.  The VPM interface is documented in section 7 and table 32 describes the format for this register.  0xa00 means to write with no stride, starting at VPM location (0, 0) with horizontal format and 32-bit elements."
+# Configure the VPM for writing. "QPU register address map on pages 37-38 where it shows writing to vw_setup is “VPMVCD_WR_SETUP”.  The VPM interface is documented in section 7 and table 32 describes the format for this register.  0xa00 means to write with no stride, starting at VPM location (0, 0) with horizontal format and 32-bit elements."
 # 1 0 1 00 0000000 # stride = 1, vertical, laned, 8-bit
 ldi vw_setup, 0xa00
 
-# Add the input value (first uniform - unif) and the register with the hard-coded
-# constant (ra1) into the VPM (rb48).
+# Add the input value (first unif) and the register with the hard-coded constant (ra1) into the VPM (rb48).
 add vpm, ra1, unif;       nop
 
 ## move 16 words (1 vector) back to the host (DMA)
