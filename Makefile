@@ -2,7 +2,7 @@
 # TODO: edit APPLICATION to name of project application from src/apps
 # TODO: edit TEST to name of unit test program from src/tests
 
-MY_MODULES = ca.o read_write_ca.o draw_ca.o mcp3008.o randomHardware.o
+MY_MODULES = ca.o read_write_ca.o draw_ca.o mcp3008.o randomHardware.o system.o profile.o
 
 # Targets for this makefile
 APPLICATION = build/project-app.bin
@@ -19,7 +19,7 @@ export warn = -Wall -Wpointer-arith -Wwrite-strings -Werror \
         -fno-diagnostics-show-option
 export freestanding = -ffreestanding -nostdinc \
 		-isystem $(shell arm-none-eabi-gcc -print-file-name=include)
-CFLAGS	= -I$(CS107E)/include -Og -g -std=c99 $$warn $$freestanding
+CFLAGS	= -I$(CS107E)/include -O3 -g -std=c99 $$warn $$freestanding
 CFLAGS += -mapcs-frame -fno-omit-frame-pointer -mpoke-function-name
 LDFLAGS	= -nostdlib -T src/boot/memmap -L$(CS107E)/lib
 LDLIBS 	= -lpi -lpisd -lgcc

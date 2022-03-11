@@ -1,6 +1,7 @@
 SECTIONS
 {
     .text 0x8000 :  { *(.text.start) *(.text*) }
+    __text_end__ = ALIGN(8);
     .rodata :       { *(.rodata*) }
     .data :         { *(.data*) }
     __bss_start__ = .;

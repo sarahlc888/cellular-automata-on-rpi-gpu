@@ -173,10 +173,10 @@ static unsigned int count_neighbors_moore(unsigned int r, unsigned int c, unsign
 
     unsigned int target_count = 0;
 
-    unsigned int next_col = (c + 1) % ca.width;
-    unsigned int prev_col = (c - 1 + ca.width) % ca.width;
-    unsigned int next_row = (r + 1) % ca.height;
-    unsigned int prev_row = (r - 1 + ca.height) % ca.height;
+    unsigned int next_col = (c == ca.width) ? 0 : c + 1;
+    unsigned int prev_col = (c == 0) ? ca.width - 1 : c - 1;
+    unsigned int next_row = (r == ca.height) ? 0 : r + 1;
+    unsigned int prev_row = (r == 0) ? ca.height - 1 : r - 1;
 
     target_count += (state_2d[r][next_col] == state_to_count);
     target_count += (state_2d[prev_row][c] == state_to_count);
