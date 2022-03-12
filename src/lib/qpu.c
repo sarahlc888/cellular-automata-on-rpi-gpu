@@ -26,15 +26,18 @@ unsigned qpu_free(unsigned handle) {
 }
 
 int qpu_run(unsigned *code, unsigned code_length, unsigned *uniforms, unsigned uniforms_count) {
-    printf("%d length\n", code_length);
-    printf("%d uniforms_count\n", uniforms_count);
+    printf("  %d length\n", code_length);
+    printf("  %d uniforms_count\n", uniforms_count);
     unsigned code_ptr = qpu_malloc(code_length + uniforms_count);
+    printf("  %p code_ptr\n", (void *)code_ptr);
 
     memcpy((unsigned *)code_ptr, code, code_length * sizeof(unsigned));
 
     unsigned uniform_ptr = code_ptr + code_length * sizeof(unsigned);
+    printf("  %p uniform_ptr\n", (void *)uniform_ptr);
     memcpy((unsigned *)uniform_ptr, uniforms, uniforms_count * sizeof(unsigned));
 
+    // These lines send the program by writing to GPU registers (see qpu.h)
     *((unsigned *) UNIFORMS) = uniform_ptr;
     *((unsigned *) ULENGTH) = uniforms_count;
     *((unsigned *) PROGRAM) = code_ptr;

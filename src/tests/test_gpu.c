@@ -7,7 +7,6 @@
 
 #include "printf.h"
 #include "uart.h"
-#include "mailbox.h"
 #include "malloc.h"
 #include "interrupts.h"
 #include "timer.h"
@@ -35,6 +34,7 @@ void main(void)
 {
     uart_init(); 
     qpu_init();
+    qpu_print_status();
 
     //this is how we include programs
     // the assembled program is taken directly from https://rpiplayground.wordpress.com/2014/05/03/hacking-the-gpu-for-fun-and-profit-pt-1/
@@ -43,8 +43,7 @@ void main(void)
     };
     
     unsigned result_ptr = qpu_malloc(16);
-    unsigned uniforms[] = {100, result_ptr};
-    
+    unsigned uniforms[] = {101, result_ptr};
     unsigned * comb_uniforms = (unsigned *) malloc(2 * 4);
     memcpy(comb_uniforms, uniforms, 2);
     
@@ -60,21 +59,36 @@ void main(void)
 
     printf("Result: %d\n", *(volatile unsigned *) result_ptr );
 
+    qpu_free(result_ptr);
+    free(comb_uniforms);
+
+
     // for (int j=0; j < 16; j++) {
     //     printf("word %d: %d\n", j, *((unsigned *)(result_ptr + j)));
     // }
-    uniforms[0] = 200;
-    qpu_run(program, SIZE(program), uniforms, 2);
+    qpu_print_status();
+    // qpu_init();
+    // qpu_print_status();
+    unsigned result_ptr2 = qpu_malloc(16);
+    unsigned uniforms2[] = {201, result_ptr2};
+    
+    unsigned * comb_uniforms2 = (unsigned *) malloc(2 * 4);
+    memcpy(comb_uniforms2, uniforms2, 2);
+
+    printf("Requested: %d\n", qpu_request_count());
+    printf("Commpleted: %d\n", qpu_complete_count());
+
+    qpu_run(program, SIZE(program), uniforms2, 2);
     
     timer_delay(1);
 
     printf("Requested: %d\n", qpu_request_count());
     printf("Commpleted: %d\n", qpu_complete_count());
 
-    printf("Result: %d\n", *(volatile unsigned *) result_ptr );
+    printf("Result: %d\n", *(volatile unsigned *) result_ptr2 );
 
 
-    qpu_free(result_ptr);
-    free(comb_uniforms);
+    qpu_free(result_ptr2);
+    free(comb_uniforms2);
     uart_putchar(EOT);
 }
