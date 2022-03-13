@@ -266,6 +266,71 @@ void run_basic_input(void)
     uart_putchar(EOT);
 }
 
+void run_2d_input(void)
+{
+    uart_init(); 
+    qpu_init();
+
+    unsigned program[] = {
+        #include "2d_input.c"   
+    };
+
+    unsigned int number_of_uniforms = 5;
+    
+    // 2D array that has 3 rows and 16 columns
+    unsigned int grid_rows = 3;
+    unsigned int grid_cols = 16;
+    unsigned int *input_ptr = malloc(4 * (grid_rows * grid_cols + 2));
+
+    // get pointers to a cell at (1, 1) and its 3 left neighbors
+    unsigned int *cell = input_ptr + grid_cols + 1;
+    unsigned int *nw_neigh = input_ptr;
+    unsigned int *w_neigh = input_ptr + grid_cols;
+    unsigned int *sw_neigh = input_ptr + 2 * grid_cols;
+
+    // populate grid
+    for (int i = 0; i < grid_rows * grid_cols + 2; i++) {
+        input_ptr[i] = i;
+    }
+
+    printf("nw: %d, w: %d, sw:%d\n", *nw_neigh, *w_neigh, *sw_neigh);
+
+    unsigned result_ptr = qpu_malloc(16);
+    unsigned uniforms[] = {
+        (unsigned) cell, 
+        (unsigned) nw_neigh, 
+        (unsigned) w_neigh, 
+        (unsigned) sw_neigh, 
+        result_ptr};
+    
+    printf("Requested: %d\n", qpu_request_count());
+    printf("Completed: %d\n", qpu_complete_count());
+
+    timer_delay(1);
+    qpu_print_status();
+    qpu_run(program, SIZE(program), uniforms, number_of_uniforms); // FLAG change
+    
+    timer_delay(1);
+
+    printf("Requested: %d\n", qpu_request_count());
+    printf("Completed: %d\n", qpu_complete_count());
+
+    // printf("Result: %d\n", *(volatile unsigned *) result_ptr );
+    // for (int j=0; j <= 16; j++) {
+    //     printf("word %d: %d\n", j, *((unsigned int*)(result_ptr + j)));
+    // }
+    // printf("\n");
+    for (int j=0; j <= 16; j++) {
+        printf("word %d: %d\n", j, *((unsigned int*)(result_ptr + 4*j)));
+    }
+    free(input_ptr);
+    // FLAG change
+    qpu_free(result_ptr);
+
+    uart_putchar(EOT);
+}
+
+
 void main(void)
 {
     // run_helloworld();
@@ -273,6 +338,9 @@ void main(void)
     // run_deadbeef();
     // run_basic();
     // run_basic();
-    run_basic_input();
-    run_basic_input();
+    // run_basic_input();
+    // run_basic_input();
+
+    run_2d_input();
+    run_2d_input();
 }
