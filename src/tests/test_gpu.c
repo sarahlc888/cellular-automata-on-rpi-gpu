@@ -224,20 +224,24 @@ void run_basic_input(void)
     unsigned int *input1_ptr = malloc(16 * 4);
     unsigned int *input2_ptr = malloc(16 * 4);
     unsigned int *input3_ptr = malloc(16 * 4);
+    unsigned int *input4_ptr = malloc(16 * 4);
+    // FLAG change
     for (int i = 0; i < 16; i++) {
         input1_ptr[i] = 2;
         input2_ptr[i] = (unsigned) i;
-        input3_ptr[i] = (unsigned) (i + 4);
+        input3_ptr[i] = (unsigned) (i + 2);
+        input4_ptr[i] = 1;
     }
     unsigned result_ptr = qpu_malloc(16);
-    unsigned uniforms[] = {(unsigned) input1_ptr, (unsigned) input2_ptr, (unsigned) input3_ptr, result_ptr};
+    unsigned uniforms[] = {(unsigned) input1_ptr, (unsigned) input2_ptr, 
+        (unsigned) input3_ptr, (unsigned) input4_ptr, result_ptr};
     
     printf("Requested: %d\n", qpu_request_count());
     printf("Completed: %d\n", qpu_complete_count());
 
     timer_delay(1);
     qpu_print_status();
-    qpu_run(program, SIZE(program), uniforms, 4);
+    qpu_run(program, SIZE(program), uniforms, 5); // FLAG change
     
     timer_delay(1);
 
@@ -255,6 +259,8 @@ void run_basic_input(void)
     free(input1_ptr);
     free(input2_ptr);
     free(input3_ptr);
+    free(input4_ptr);
+    // FLAG change
     qpu_free(result_ptr);
 
     uart_putchar(EOT);

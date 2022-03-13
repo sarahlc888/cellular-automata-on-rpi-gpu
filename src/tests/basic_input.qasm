@@ -3,6 +3,7 @@
 or r1, unif, 0; nop
 or r2, unif, 0; nop
 or r3, unif, 0; nop
+or r0, unif, 0; nop
 # set up VCD (Table 36: VCD DMA Load (VDR) Basic Setup Format)
 
 # Adapted from rpi playground
@@ -29,8 +30,17 @@ nop;       nop;
 nop;       nop;
 
 # ID| MODEW| MPITCH| ROWLEN| NROWS| VPITCH| VERT|      ADDRXY|
-#  1|   000|   0011|   0000|  0001|   0001|    0| 0000010 0000| // 0x83011010
+#  1|   000|   0011|   0000|  0001|   0001|    0| 0000010 0000| // 0x83011020
 ldi vr_setup, 0x83011020
+or vr_addr, r0, r0;
+or rb39, vr_wait, 0;       nop # Wait for the DMA to complete 
+nop;       nop;
+nop;       nop;
+nop;       nop;
+
+# ID| MODEW| MPITCH| ROWLEN| NROWS| VPITCH| VERT|      ADDRXY|
+#  1|   000|   0011|   0000|  0001|   0001|    0| 0000011 0000| // 0x83011030
+ldi vr_setup, 0x83011030
 or vr_addr, r2, r2;
 or rb39, vr_wait, 0;       nop # Wait for the DMA to complete 
 nop;       nop;
@@ -40,10 +50,11 @@ nop;       nop;
 # move from VPM to QPU registers (generic block read)
 # read 1 vector, unused, stride of 1, horizontal, ignore, 32 bit, starting at 0x0 
 # ID|        -|  NUM|  -|   STRIDE| HORIZ| LANED| SIZE|      ADDR|
-#  0|   000000| 0011| 00|   000001|     1|     0|   10|  00000000| // 0x301a00
+#  0|   000000| 0100| 00|   000001|     1|     0|   10|  00000000| // 0x401a00
 # ID|        -|  NUM|  -|   STRIDE| HORIZ| LANED| SIZE|      ADDR|
 #  0|   000000| 0001| 00|   000001|     1|     0|   10|  00000000| // 0x101a00
-ldi vr_setup, 0x301a00
+# FLAG change
+ldi vr_setup, 0x401a00
 mov ra4, vpm; nop
 mov rb5, vpm; nop
 nop;       nop;
@@ -53,16 +64,21 @@ mov ra1, vpm; nop
 nop;       nop;
 nop;       nop;
 nop;       nop;
+mov rb6, vpm; nop
+nop;       nop;
+nop;       nop;
+nop;       nop;
 
 # do addition
-# mov r0, ra1; nop
-# add r0, ra1, rb5;
 add r0, ra4, rb5
 add r0, r0, ra1; nop
+add r0, r0, rb6; nop
 # mov ra3, rb5;
 # mov ra3, ra4;
 # add ra3, ra4, 2;
-
+nop;       nop;
+nop;       nop;
+nop;       nop;
 
 # move vector from QPU to VPM (generic block write)
 # configure VPM to be written in (stride=0, horizontal, ignore packed/laned, 32-bit, address 0x0) 1 0 10 00000000 // 0xa00
