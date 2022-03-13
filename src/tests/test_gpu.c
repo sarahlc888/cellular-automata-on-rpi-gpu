@@ -177,18 +177,24 @@ void run_basic(void)
 {
     uart_init(); 
     qpu_init();
-
+    qpu_print_status();
     unsigned program[] = {
         #include "basic.c"   
     };
     
+    unsigned int *input1_ptr = malloc(16 * 4);
+    unsigned int *input2_ptr = malloc(16 * 4);
+    for (int i = 0; i < 16; i++) {
+        input1_ptr[i] = 18;
+        input2_ptr[i] = 12;
+    }
     unsigned result_ptr = qpu_malloc(16);
-    unsigned uniforms[] = {result_ptr};
+    unsigned uniforms[] = {(unsigned) input1_ptr, (unsigned) input2_ptr, result_ptr};
     
     printf("Requested: %d\n", qpu_request_count());
     printf("Completed: %d\n", qpu_complete_count());
 
-    qpu_run(program, SIZE(program), uniforms, 1);
+    qpu_run(program, SIZE(program), uniforms, 3);
     
     timer_delay(1);
 
@@ -199,6 +205,8 @@ void run_basic(void)
     for (int j=0; j <= 16; j++) {
         printf("word %d: %d\n", j, *((unsigned int*)(result_ptr + 4*j)));
     }
+    free(input1_ptr);
+    free(input2_ptr);
     qpu_free(result_ptr);
 
     uart_putchar(EOT);
@@ -213,15 +221,14 @@ void run_basic_input(void)
         #include "basic_input.c"   
     };
     
-    unsigned input1_ptr = qpu_malloc(16);
-    unsigned input2_ptr = qpu_malloc(16);
+    unsigned int *input1_ptr = malloc(16 * 4);
+    unsigned int *input2_ptr = malloc(16 * 4);
     for (int i = 0; i < 16; i++) {
-        ((unsigned *)input1_ptr)[i] = 19;
-        ((unsigned *)input2_ptr)[i] = 4;
+        input1_ptr[i] = 11;
+        input2_ptr[i] = 4;
     }
-    
     unsigned result_ptr = qpu_malloc(16);
-    unsigned uniforms[] = {input1_ptr, input2_ptr, result_ptr};
+    unsigned uniforms[] = {(unsigned) input1_ptr, (unsigned) input2_ptr, result_ptr};
     
     printf("Requested: %d\n", qpu_request_count());
     printf("Completed: %d\n", qpu_complete_count());
@@ -241,6 +248,8 @@ void run_basic_input(void)
     for (int j=0; j <= 16; j++) {
         printf("word %d: %d\n", j, *((unsigned int*)(result_ptr + 4*j)));
     }
+    free(input1_ptr);
+    free(input2_ptr);
     qpu_free(result_ptr);
 
     uart_putchar(EOT);
@@ -252,5 +261,7 @@ void main(void)
     // run_vectorsum();
     // run_deadbeef();
     // run_basic();
+    // run_basic();
+    run_basic_input();
     run_basic_input();
 }

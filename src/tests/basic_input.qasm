@@ -3,7 +3,6 @@
 or r1, unif, 0; nop
 or r2, unif, 0; nop
 # set up VCD (Table 36: VCD DMA Load (VDR) Basic Setup Format)
-# note: pitch = 8*2^MPITCH bytes. TODO: understand MPITCH? VPITCH?
 
 # Adapted from rpi playground
 # Modified: MODEW = 0, MPITCH = 3, ROWLEN = 16, NROWS = 1, VPITCH=1, horizontal, ADDRXY = 0
@@ -14,21 +13,27 @@ ldi vr_setup, 0x83011000
 # load the vectors at r1 from main memory into the VPM (DMA load)
 or vr_addr, r1, r1;
 or rb39, vr_wait, 0;       nop # Wait for the DMA to complete 
-# Set up with appropriate next write address
+nop;       nop;
+nop;       nop;
+nop;       nop;
+
+# Set up with appropriate next write address (x = 0, y = 1)
 # ID| MODEW| MPITCH| ROWLEN| NROWS| VPITCH| VERT|      ADDRXY|
-#  1|   000|   0011|   0000|  0001|   0001|    0| 00000000001|
-# 1 000 0011 0000 0001 0001 0 00000000000 // 0x83011001
-ldi vr_setup, 0x83011001
+#  1|   000|   0011|   0000|  0001|   0001|    0| 0000001 0000| // 0x83011010
+# OR: 1 000 0011 0000 0001 0001 0 00000000001 // 0x83011001
+ldi vr_setup, 0x83011010
 or vr_addr, r2, r2;
 or rb39, vr_wait, 0;       nop # Wait for the DMA to complete 
+nop;       nop;
+nop;       nop;
+nop;       nop;
 
-# move from VPM to QPU registers
-# read 16 vectors, unused, stride of 1, vertical, ignore, 32 bit, starting at 0x0 // 0x1200
-# read 2 vectors, unused, stride of 1, vertical, ignore, 32 bit, starting at 0x0 // 0010 00 000001 0 0 10 00000000 // 0x201200
-# ID|        -|  NUM|  -|   STRIDE| HORIZ| LANED| SIZE|      ADDR|
-#  0|   000000| 0010| 00|   000001|     0|     0|   10|  00000000|
+# move from VPM to QPU registers (generic block read)
+# read 1 vector, unused, stride of 1, horizontal, ignore, 32 bit, starting at 0x0 
 # ID|        -|  NUM|  -|   STRIDE| HORIZ| LANED| SIZE|      ADDR|
 #  0|   000000| 0010| 00|   000001|     1|     0|   10|  00000000| // 0x201a00
+# ID|        -|  NUM|  -|   STRIDE| HORIZ| LANED| SIZE|      ADDR|
+#  0|   000000| 0001| 00|   000001|     1|     0|   10|  00000000| // 0x101a00
 ldi vr_setup, 0x201a00
 mov ra4, vpm
 mov rb5, vpm
@@ -36,13 +41,13 @@ nop;       nop;
 nop;       nop;
 nop;       nop;
 
+
 # do addition
-# add ra3, ra4, rb5;
+add r3, ra4, rb5;
 # mov ra3, rb5;
-add ra3, ra4, 2;
-nop;       nop;
-nop;       nop;
-nop;       nop;
+# mov ra3, ra4;
+# add ra3, ra4, 2;
+
 
 # move vector from QPU to VPM (generic block write)
 # configure VPM to be written in (stride=0, horizontal, ignore packed/laned, 32-bit, address 0x0) 1 0 10 00000000 // 0xa00
@@ -50,7 +55,7 @@ nop;       nop;
 # stride = 1 --> 0x1a00 (but stride shouldn't matter bc there's only 1 vector)
 ldi vw_setup, 0xa00 
 # mov vpm, 12; nop # move data into VPM to sanity check
-mov vpm, ra3; nop # move data into VPM
+mov vpm, r3; nop # move data into VPM
 
 # store data from VPM to main memory (DMA store)
 # |ID |UNITS   |DEPTH   |LANED |HORIZ |VPMBASE     |MODEW
