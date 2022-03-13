@@ -1,7 +1,27 @@
+# LOAD VECTORS FROM MEMORY
+# load the addresses of vectors into registers
+or r1, unif, 0; nop
+or r2, unif, 0; nop
+
 # load a vector
-# TODO: move a vector from main memory into the VPM (DMA load) // use rb50, unif, 0;  
+# move a vector from main memory into the VPM (DMA load)
+# 1 000 0011 0000 0001 0001 1 00000000000 // 0x83011800
+# horiz 0x83011000
+ldi ra49, 0x83011000
+or vr_addr, r2, r2; nop
+or rb39, vr_wait, 0;       nop # Wait for the DMA to complete 
+nop;       nop;
+nop;       nop;
+nop;       nop;
+
 # TODO: and then move from VPM to QPU registers
-ldi r1, 0x3
+ldi vr_setup, 0x101a00
+mov r1, vpm; nop 
+nop;       nop;
+nop;       nop;
+nop;       nop;
+
+# ldi r1, 0x4
 ldi r2, 0x2
 
 # do addition

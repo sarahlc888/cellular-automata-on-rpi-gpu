@@ -26,7 +26,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "mailbox.h" 
-#include "printf.h"
 #include "strings.h"
 #include "assert.h"
 
@@ -92,9 +91,7 @@ unsigned mem_lock(int file_desc, unsigned handle)
    p[i++] = 0x00000000; // end tag
    p[0] = i*sizeof *p; // actual size
    
-   printf("memlock p[5] %x\n", p[5]);
    mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
-   printf("memlock p[5] %x\n", p[5]);
 //   mbox_property(file_desc, p);
    return p[5];
 }
@@ -183,7 +180,6 @@ unsigned execute_qpu(int file_desc, unsigned num_qpus, unsigned control, unsigne
    p[i++] = 0x00000000; // end tag
    p[0] = i*sizeof *p; // actual size
 
-   printf("requesting!\n");
    mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
 //   mbox_property(file_desc, p);
    return p[5];
