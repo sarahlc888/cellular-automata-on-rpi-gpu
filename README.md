@@ -13,6 +13,7 @@
     - CPU speed ups - enabling cache
     - Fine tuning algorithm using profiler (e.g. test performance using modulo for wrapping vs. ternary conditions)
     - GPU
+        - Understanding relationship between main memory, VPM, and QPU registers; how uniforms come into the equation; how to write to registers to submit programs
 ## Member contribution
 A short description of the work performed by each member of the team.
 
@@ -26,11 +27,34 @@ your original work.
 Cellular automata library
 - Our WireWorld implementation referenced [this](https://mathworld.wolfram.com/WireWorld.html) description of the cellular automaton (including the embedded GIF of OR, XOR, and AND gates).
 - We used the [FAT Filesystem module](http://elm-chan.org/fsw/ff/00index_e.html), CS107E [guide](http://cs107e.github.io/guides/extras/sd_library/) to FatFS, and the example project at `$CS107E/examples/sd_fatfs` to write code to read and write presets. 
-- `system.c` and `system.h` from CS107E code
+- To enable the cache, we used `system.c` and `system.h` from CS107E code
+- We used code from the profiler extension of assignment 7 (Sarah's submission)
 
 GPU research
-- Consulted past GPU project code from [ahconkey-JoshFrancisCodes-project](https://github.com/cs107e/ahconkey-JoshFrancisCodes-project). Before being given access to their code, we did independent research that covered most of their references as well. Their code was particularly helpful in elucidating how to directly write to GPU registers and circumvent the mailbox.
-- https://www.mnm-team.org/pub/Fopras/rixe19/PDF-Version/rixe19.pdf
+- Broadcom manual
+    - QPU Register Address Map on p. 37-38
+    - Section 7: VPM and VCD (particularly the tables for QPU Registers for VPM and VCD Functions)
+- A past CS 107E GPU project, "Bare Metal C QPU Library for the Raspberry Pi" by ahconkey and JoshFrancisCodes [(GitHub)](https://github.com/cs107e/ahconkey-JoshFrancisCodes-project)
+    - Before being given access to this code, we did thorough independent research that covered many of their project's references (especially the sources that they heavily based their code on). However, their code was an invaluable starting point because unlike those references, it was baremetal and used the CS 107E mailbox code.
+    - This code was particularly helpful in demonstrating: how to submit a program to the GPU by directly writing to GPU registers, how to allocate/free/lock memory for the GPU, how to use `#include` to load assembled QPU programs (and in guiding us to use the [vc4asm](http://maazl.de/project/vc4asm/doc/) assembler).
+    - We use their `mailbox_functions` and `qpu` modules in their entirety, with only minor changes.
+    - Note: the code did not compile in its given form, so many adjustments were made. Almost all work hours involving the GPU centered around getting a simple poke program to consistently work by consulting this code as well as well as the below references. (The next steps were working with loading/storing more complicated vectors.)
+- [Hacking The GPU For Fun And Profit](https://rpiplayground.wordpress.com/category/gpu/)
+    - Our QPU assembly code was heavily based off of the accompanying [GitHub repository](https://github.com/elorimer/rpi-playground), especially the `helloworld` and `SHA-256` examples.
+- [SIMD processing of AES on the Raspberry Pi’s GPU](https://www.mnm-team.org/pub/Fopras/rixe19/PDF-Version/rixe19.pdf)
+    - P. 13-17 provide a valuable overview of the GPU, which makes reading the Broadcom Manual much more accessible
+- [gpu-deadbeef](https://github.com/0xfaded/gpu-deadbeef) demonstrates how to write to GPU registers to write from QPU registers into the VPM and then from the VPM into main memory.
+- [QPU Demo: DMA Transfers](https://asurati.github.io/wip/post/2021/09/28/qpu-demo-dma-transfers/) breaks down DMA transfers with useful examples. This was helpful in determining how to load/store vector data from main memory to the GPU VPM.
+- We consulted code for the existing QPU libraries [GPU_FFT](http://www.aholme.co.uk/GPU_FFT/Main.htm), [QPULib](https://github.com/mn416/QPULib), and [pi-gemm](https://github.com/jetpacapp/pi-gemm/blob/master/helpers.asm).
+- General background
+    - https://github.com/ali1234/vcpoke
+    - https://www.linuxtut.com/en/2e85318989170f967e4b/
+    - https://www.elesoftrom.com.pl/blog/en/vc4-3d-programming.php#_vpm
+
+Vectorized game of life
+- Approach inspired by https://www.r-bloggers.com/2018/10/conways-game-of-life-in-r-or-on-the-importance-of-vectorizing-your-r-code/
+    - "The way this code works is: it builds 8 copies of the life-table, one shifting each neighboring cell into the current cell-position. With these 8 new matrices the entire life forward evolution rule is computed vectorized over all cells using the expression “(pop==3) | (d & (pop>=2) & (pop<=3))“. Notice the vectorized code is actually shorter: we handle the edge-cases by zero-padding."
+
 ## Self-evaluation
 How well was your team able to execute on the plan in your proposal?  
 Any trying or heroic moments you would like to share? Of what are you particularly proud: the effort you put into it? the end product? 
