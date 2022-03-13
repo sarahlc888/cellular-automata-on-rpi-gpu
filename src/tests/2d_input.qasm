@@ -147,6 +147,24 @@ nop;       nop;
 nop;       nop;
 nop;       nop;
 
+# Determine the new cell state
+# ra4 = old cell state (0 or 1); r0 = neighbor sum
+# r2, r3 are free now
+
+# TODO: check if the condition codes works on a vectorized elvel 
+sub.setf r3, r0, 3; nop # 0 if neighbor sum == 3, so Z should be set 
+mov.ifz r3, 1; nop # set 1 if neigh sum == 3, 0 otherwise
+mov.ifnz r3, 0; nop 
+
+sub.setf r2, r0, 2; nop # 0 if neighbor sum == 2
+mov.ifz r2, 1; nop # set 1 if neigh sum == 2, 0 otherwise
+mov.ifnz r2, 0; nop 
+
+and r2, r2, ra4; nop # check if neighbor sum == 2 AND cell was previously on
+
+or r0, r2, r3; # determine the new cell state
+# (sum == 3 || (sum == 2 && cell == ca.state_colors[1])) ? 1 : 0;
+
 # move vector from QPU to VPM (generic block write)
 # configure VPM to be written in (stride=0, horizontal, ignore packed/laned, 32-bit, address 0x0) 1 0 10 00000000 // 0xa00
 # configure VPM to be written in (stride=0, vertical, ignore packed/laned, 32-bit, address 0x0) 0 0 10 00000000 // 0x200

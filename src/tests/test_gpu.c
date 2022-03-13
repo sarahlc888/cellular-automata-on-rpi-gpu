@@ -290,8 +290,29 @@ void run_2d_input(void)
 
     // populate grid
     for (int i = 0; i < grid_rows * grid_cols + 2; i++) {
-        input_ptr[i] = i;
+        input_ptr[i] = 0;
+        // input_ptr[i] = i;
     }
+    // make shapes
+    input_ptr[17] = 1;
+    input_ptr[18] = 1;
+    input_ptr[33] = 1;
+    input_ptr[34] = 1;
+
+    input_ptr[20] = 1;
+    input_ptr[21] = 1;
+    input_ptr[22] = 1;
+
+    input_ptr[24] = 1;
+    input_ptr[9] = 1;
+    input_ptr[10] = 1;
+    input_ptr[27] = 1;
+    input_ptr[41] = 1;
+    input_ptr[42] = 1;
+
+    input_ptr[14] = 1;
+    input_ptr[31] = 1;
+    input_ptr[47] = 1;
 
     printf("nw: %d, w: %d, sw:%d\n", *nw_neigh, *w_neigh, *sw_neigh);
 
