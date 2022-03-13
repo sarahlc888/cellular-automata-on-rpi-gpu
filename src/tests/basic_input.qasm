@@ -2,6 +2,7 @@
 # load the addresses of vectors into registers
 or r1, unif, 0; nop
 or r2, unif, 0; nop
+or r3, unif, 0; nop
 # set up VCD (Table 36: VCD DMA Load (VDR) Basic Setup Format)
 
 # Adapted from rpi playground
@@ -10,8 +11,7 @@ or r2, unif, 0; nop
 #  1|   000|   0011|   0000|  0001|   0001|    0| 00000000000|
 # 1 000 0011 0000 0001 0001 0 00000000000 // 0x83011000
 ldi vr_setup, 0x83011000
-# load the vectors at r1 from main memory into the VPM (DMA load)
-or vr_addr, r1, r1;
+or vr_addr, r1, r1; # load the vectors at r1 from main memory into the VPM (DMA load)
 or rb39, vr_wait, 0;       nop # Wait for the DMA to complete 
 nop;       nop;
 nop;       nop;
@@ -22,6 +22,15 @@ nop;       nop;
 #  1|   000|   0011|   0000|  0001|   0001|    0| 0000001 0000| // 0x83011010
 # OR: 1 000 0011 0000 0001 0001 0 00000000001 // 0x83011001
 ldi vr_setup, 0x83011010
+or vr_addr, r3, r3;
+or rb39, vr_wait, 0;       nop # Wait for the DMA to complete 
+nop;       nop;
+nop;       nop;
+nop;       nop;
+
+# ID| MODEW| MPITCH| ROWLEN| NROWS| VPITCH| VERT|      ADDRXY|
+#  1|   000|   0011|   0000|  0001|   0001|    0| 0000010 0000| // 0x83011010
+ldi vr_setup, 0x83011020
 or vr_addr, r2, r2;
 or rb39, vr_wait, 0;       nop # Wait for the DMA to complete 
 nop;       nop;
@@ -31,19 +40,25 @@ nop;       nop;
 # move from VPM to QPU registers (generic block read)
 # read 1 vector, unused, stride of 1, horizontal, ignore, 32 bit, starting at 0x0 
 # ID|        -|  NUM|  -|   STRIDE| HORIZ| LANED| SIZE|      ADDR|
-#  0|   000000| 0010| 00|   000001|     1|     0|   10|  00000000| // 0x201a00
+#  0|   000000| 0011| 00|   000001|     1|     0|   10|  00000000| // 0x301a00
 # ID|        -|  NUM|  -|   STRIDE| HORIZ| LANED| SIZE|      ADDR|
 #  0|   000000| 0001| 00|   000001|     1|     0|   10|  00000000| // 0x101a00
-ldi vr_setup, 0x201a00
-mov ra4, vpm
-mov rb5, vpm
+ldi vr_setup, 0x301a00
+mov ra4, vpm; nop
+mov rb5, vpm; nop
 nop;       nop;
 nop;       nop;
 nop;       nop;
-
+mov ra1, vpm; nop
+nop;       nop;
+nop;       nop;
+nop;       nop;
 
 # do addition
-add r3, ra4, rb5;
+# mov r0, ra1; nop
+# add r0, ra1, rb5;
+add r0, ra4, rb5
+add r0, r0, ra1; nop
 # mov ra3, rb5;
 # mov ra3, ra4;
 # add ra3, ra4, 2;
@@ -55,7 +70,7 @@ add r3, ra4, rb5;
 # stride = 1 --> 0x1a00 (but stride shouldn't matter bc there's only 1 vector)
 ldi vw_setup, 0xa00 
 # mov vpm, 12; nop # move data into VPM to sanity check
-mov vpm, r3; nop # move data into VPM
+mov vpm, r0; nop # move data into VPM
 
 # store data from VPM to main memory (DMA store)
 # |ID |UNITS   |DEPTH   |LANED |HORIZ |VPMBASE     |MODEW

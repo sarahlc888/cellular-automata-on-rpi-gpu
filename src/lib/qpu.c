@@ -17,6 +17,7 @@ int qpu_init(void) {
 
 unsigned qpu_malloc(unsigned size) {
     unsigned handle = mem_alloc(0, size*sizeof(unsigned), 4096, 0x4);
+    printf("QPU malloc %d\n", handle);
     return mem_lock(0, handle);
 }
 

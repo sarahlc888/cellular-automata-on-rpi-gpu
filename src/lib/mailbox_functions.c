@@ -92,7 +92,9 @@ unsigned mem_lock(int file_desc, unsigned handle)
    p[i++] = 0x00000000; // end tag
    p[0] = i*sizeof *p; // actual size
    
+   printf("memlock p[5] %x\n", p[5]);
    mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
+   printf("memlock p[5] %x\n", p[5]);
 //   mbox_property(file_desc, p);
    return p[5];
 }
