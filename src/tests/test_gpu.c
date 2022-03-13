@@ -204,10 +204,49 @@ void run_basic(void)
     uart_putchar(EOT);
 }
 
+void run_basic_input(void)
+{
+    uart_init(); 
+    qpu_init();
+
+    unsigned program[] = {
+        #include "basic_input.c"   
+    };
+    
+    unsigned input1_ptr = qpu_malloc(16);
+    unsigned input2_ptr = qpu_malloc(16);
+    for (int i = 0; i < 16; i++) {
+        ((unsigned *)input1_ptr)[i] = 1;
+        ((unsigned *)input2_ptr)[i] = 4;
+    }
+    
+    unsigned result_ptr = qpu_malloc(16);
+    unsigned uniforms[] = {input1_ptr, input2_ptr, result_ptr};
+    
+    printf("Requested: %d\n", qpu_request_count());
+    printf("Completed: %d\n", qpu_complete_count());
+
+    qpu_run(program, SIZE(program), uniforms, 3);
+    
+    timer_delay(1);
+
+    printf("Requested: %d\n", qpu_request_count());
+    printf("Completed: %d\n", qpu_complete_count());
+
+    // printf("Result: %d\n", *(volatile unsigned *) result_ptr );
+    for (int j=0; j <= 16; j++) {
+        printf("word %d: %d\n", j, *((unsigned int*)(result_ptr + 4*j)));
+    }
+    qpu_free(result_ptr);
+
+    uart_putchar(EOT);
+}
+
 void main(void)
 {
     // run_helloworld();
     // run_vectorsum();
     // run_deadbeef();
-    run_basic();
+    // run_basic();
+    run_basic_input();
 }
