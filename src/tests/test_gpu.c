@@ -216,7 +216,7 @@ void run_basic_input(void)
     unsigned input1_ptr = qpu_malloc(16);
     unsigned input2_ptr = qpu_malloc(16);
     for (int i = 0; i < 16; i++) {
-        ((unsigned *)input1_ptr)[i] = 1;
+        ((unsigned *)input1_ptr)[i] = 19;
         ((unsigned *)input2_ptr)[i] = 4;
     }
     
@@ -234,6 +234,10 @@ void run_basic_input(void)
     printf("Completed: %d\n", qpu_complete_count());
 
     // printf("Result: %d\n", *(volatile unsigned *) result_ptr );
+    // for (int j=0; j <= 16; j++) {
+    //     printf("word %d: %d\n", j, *((unsigned int*)(result_ptr + j)));
+    // }
+    // printf("\n");
     for (int j=0; j <= 16; j++) {
         printf("word %d: %d\n", j, *((unsigned int*)(result_ptr + 4*j)));
     }
