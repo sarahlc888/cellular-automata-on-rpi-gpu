@@ -3,6 +3,21 @@
 
 ## Team members
 
+To Do - Avi
+- Physical interface (make a board)
+- Better UI to select CA type then preset option
+- Start/stop simulation w button 
+- Could allow saving custom start state presets
+- Rig up new potentiometers when they come in, smoothing if time allows (low priority) 
+
+To Do - Sarah
+- Get basic GPU working 
+- Decide the resolution (aiming 1024)
+- Then file compression (needed for big start states) 
+- Make 3 presets for each CA (4th is custom)
+- Speed up GPU / improve approach in general
+- Add more CA
+- Could vectorize wireworld 
 ## Project description
 ### Components
 - CA representation library
