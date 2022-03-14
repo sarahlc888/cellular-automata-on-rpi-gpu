@@ -2,11 +2,11 @@
 # TODO: edit APPLICATION to name of project application from src/apps
 # TODO: edit TEST to name of unit test program from src/tests
 
-MY_MODULES = mailbox.o read_write_ca.o draw_ca.o mcp3008.o button.o randomHardware.o system.o profile.o mailbox_functions.o qpu.o ca_gpu.o
+MY_MODULES = mailbox.o read_write_ca.o draw_ca.o mcp3008.o button.o randomHardware.o system.o profile.o mailbox_functions.o qpu.o menu.o etch_a_sketch.o ca.o
 
 # Targets for this makefile
 APPLICATION = build/project-app.bin
-TEST 	    = build/test_ca_gpu.bin
+TEST 	    = build/test_menu.bin
 
 all: $(APPLICATION) $(TEST)
 

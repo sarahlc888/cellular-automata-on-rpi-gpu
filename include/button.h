@@ -1,3 +1,6 @@
+#ifndef BUTTON_H
+#define BUTTON_H
+
 #include "gpio.h"
 #include "gpio_extra.h"
 #include "gpio_interrupts.h"
@@ -22,7 +25,7 @@ void button_init(unsigned pin);
 
 int get_button(unsigned pin);
 
-// rb_t* get_button_rb(unsigned pin);
 
 button_event_t check_button_dequeue(unsigned pin);
 
+#endif
