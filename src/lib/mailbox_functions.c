@@ -25,7 +25,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "mailbox.h" 
+#include "../../include/mailbox.h" 
+#include "printf.h"
 #include "strings.h"
 #include "assert.h"
 
@@ -36,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 unsigned mem_alloc(int file_desc, unsigned size, unsigned align, unsigned flags)
 {
    int i=0;
-   unsigned p[32];
+   unsigned p[32] __attribute__ ((aligned (16))); 
    p[i++] = 0; // size
    p[i++] = 0x00000000; // process request
 
@@ -91,7 +92,8 @@ unsigned mem_lock(int file_desc, unsigned handle)
    p[i++] = 0x00000000; // end tag
    p[0] = i*sizeof *p; // actual size
    
-   mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
+   bool ret = mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
+   // printf("memlock p[5] %x, ret = %d\n", p[5], ret);
 //   mbox_property(file_desc, p);
    return p[5];
 }
