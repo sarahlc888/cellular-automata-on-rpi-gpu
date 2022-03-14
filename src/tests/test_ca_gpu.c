@@ -16,7 +16,7 @@ void main(void) {
   system_enable_cache();
 
   unsigned int delay_ms = 0;
-  unsigned int run_time = 1000000 * 4;
+  unsigned int run_time = 1000000 * 3;
   unsigned int save_preset = 0;
   unsigned int use_time_limit = 1;
   uart_init();
@@ -31,11 +31,11 @@ void main(void) {
 
   // game of life
   color_t color_states[2] = {GL_BLACK, GL_WHITE};
-  ca_init(LIFE, 64, 64, color_states,
+  ca_init(LIFE, 1024, 1024, color_states,
           delay_ms); // ca_init(LIFE, 1000, 1000, color_states, 1000)
 
-  ca_create_and_load_preset(preset_file, (preset_fn_t)create_life_preset2,
-                            save_preset);
+  ca_create_and_load_preset(preset_file, (preset_fn_t)create_random_life_preset,
+                            save_preset); // create_random_life_preset, create_life_preset2
   // ca_create_and_load_preset(preset_file, (preset_fn_t)
   // create_random_life_preset, save_preset);
   profile_on();

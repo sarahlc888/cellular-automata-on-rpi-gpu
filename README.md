@@ -1,8 +1,9 @@
 # sarahlc888-aviously25-project
-## Demo plan (for Avi)
+## Demo plan
+- Can show the speedup allowed by GPU by showing CPU version first?
 - Show Life
-    - Random
     - One with some cool patterns/oscillators
+    - Random
     - Fancy one that Avi will make/find (with logic !)
     - Custom (etch-a-sketch)
 - Show WireWorld
@@ -11,10 +12,7 @@
 - Could do Langton's loop
     - Might not have time but Avi can do it if he has time
 
-## Project title
-Icarus
-CAsseiopia
-CAllisto
+## Project Title
 ## Team members
 
 To Do - Avi
@@ -27,9 +25,7 @@ To Do - Avi
 - Rig up new potentiometers when they come in, smoothing if time allows (low priority)
 
 To Do - Sarah
-- Get basic GPU working
 - Make 3 presets for each CA (4th is custom)
-- Speed up GPU / improve approach in general
 - Add more CA
 - Could vectorize wireworld
 
@@ -38,9 +34,10 @@ To Do - Sarah
 ### Components
 
 - CA representation library
-- FAT FS support for reading/writing states
-- Hardware
-- SPI
+  - Note: the requested CA grid must have a width that is a multiple of 16
+- FAT File System support for reading/writing preset states
+- Hardware control board
+  - SPI for analog-to-digital conversion
 - Performance optimization
   - CPU speed ups - enabling cache
   - Fine tuning algorithm using profiler (e.g. test performance using modulo for wrapping vs. ternary conditions)
@@ -84,11 +81,11 @@ GPU research
 - [gpu-deadbeef](https://github.com/0xfaded/gpu-deadbeef) demonstrates how to write to GPU registers to write from QPU registers into the VPM and then from the VPM into main memory.
 - [QPU Demo: DMA Transfers](https://asurati.github.io/wip/post/2021/09/28/qpu-demo-dma-transfers/) breaks down DMA transfers with useful examples. This was helpful in determining how to load/store vector data from main memory to the GPU VPM.
 - We consulted code for the existing QPU libraries [GPU_FFT](http://www.aholme.co.uk/GPU_FFT/Main.htm), [QPULib](https://github.com/mn416/QPULib), and [pi-gemm](https://github.com/jetpacapp/pi-gemm/blob/master/helpers.asm).
-- General background
+- General background/inspiration
   - https://github.com/ali1234/vcpoke
   - https://www.linuxtut.com/en/2e85318989170f967e4b/
   - https://www.elesoftrom.com.pl/blog/en/vc4-3d-programming.php#_vpm
-
+  - https://nullprogram.com/blog/2014/06/10/ 
 Vectorized game of life
 
 - Approach inspired by https://www.r-bloggers.com/2018/10/conways-game-of-life-in-r-or-on-the-importance-of-vectorizing-your-r-code/
@@ -116,3 +113,8 @@ For general-purpose computing, the Vertex Cache DMA (VCD) executes reads from th
 ### Transferring data from VPM to main memory
 
 The VDW stores vertical or horizontal VPM data into 2D arrays of data in memory
+
+### General workflow
+- Write assembly file
+- Run assembler using `~/Downloads/tools/vc4asm/build-Darwin-arm64-Release/vc4asm -i vc4.qinc -C FILE.c FILE.qasm`
+- Include `FILE.c` within the `.c` driver program

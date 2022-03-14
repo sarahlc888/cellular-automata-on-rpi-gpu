@@ -92,9 +92,7 @@ void ca_init(ca_mode_t ca_mode, unsigned int screen_width,
 
   unsigned int border_width = 1;
   // initialize GL for non-custom modes
-  printf("init\n");
   if (ca_mode != CUSTOM_LIFE && ca_mode != CUSTOM_WIREWORLD) {
-    printf("Initializing GL!\n");
     gl_init(screen_width + 2 * border_width, screen_height + 2 * border_width,
             GL_DOUBLEBUFFER); // initialize frame buffer
 
@@ -334,7 +332,44 @@ static void gpu_gol_update_state(unsigned int *prev, void *next) {
 
     unsigned int number_of_uniforms = 7; 
     unsigned program[] = {
-        #include "fb_life.c"   
+        #include "../tests/life_driver.c"   
+    };
+
+    qpu_init();
+
+    // Uniforms
+    // 1. Number of rows
+    // 2. Number of columns (must be multiple of 16)
+    // 3. Frame buffer's padded_width
+    // 4. Off color
+    // 5. On color 
+    // 6. Prev state -- Current FB pointer (to read to)
+    // 7. Next state -- Next FB pointer (to write to)
+    unsigned uniforms[] = {
+      (unsigned) ca.height,
+      (unsigned) ca.width,
+      (unsigned) ca.padded_width,
+      (unsigned) ca.state_colors[0],
+      (unsigned) ca.state_colors[1],
+      (unsigned) cur_state,
+      (unsigned) next_state 
+    };
+    // printf("gpu updating state for sliding window\n");
+    qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+    // printf("--\n");
+    while (qpu_request_count() != qpu_complete_count()) {}
+    assert(qpu_request_count() == qpu_complete_count());
+    assert(qpu_complete_count() == 1);
+
+}
+
+static void gpu_gol_update_state_cdriver(unsigned int *prev, void *next) {
+    unsigned int *cur_state = prev;
+    unsigned int *next_state = (unsigned int *) next;
+
+    unsigned int number_of_uniforms = 7; 
+    unsigned program[] = {
+        #include "../tests/fb_life.c"   
     };
 
     
@@ -401,7 +436,6 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run) {
   unsigned int start = timer_get_ticks();
   // unsigned int prev_ticks = timer_get_ticks();
   unsigned int total_updates = 0;
-  printf("THE Loop is starting\n");
   while ((!use_time_limit) || (timer_get_ticks() < ticks_to_run + start)) {
     timer_delay_ms(ca.update_ms);
 
@@ -418,11 +452,10 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run) {
     ca.cur_state = ca.next_state;
 
     // prev_ticks = timer_get_ticks();
-    // total_updates++;
+    total_updates++;
 
     // printf("loop status: %d, %d, %d\n", use_time_limit, timer_get_ticks(), ticks_to_run + start);
   }
-  printf("the loop has ended");
 
   printf("total updates: %d\n", total_updates);
 }

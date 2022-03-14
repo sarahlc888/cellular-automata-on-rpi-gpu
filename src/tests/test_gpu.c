@@ -1047,6 +1047,97 @@ void run_toy_life_stepped(unsigned int num_steps)
     uart_putchar(EOT);
 }
 
+void run_fb_life_nodriver(void)
+{
+    uart_init(); 
+
+    unsigned program[] = {
+        #include "simple_driver5.c"   
+    };
+    
+    // 2D array that has 3 rows and 32 columns
+    unsigned int border_width = 1; // TODO: actually use this
+    unsigned int grid_width = 32;
+    unsigned int grid_height = 4;
+    unsigned int grid_bordered_width = grid_width + 2;
+    unsigned int grid_bordered_height = grid_height + 2;
+
+    // initialize frame buffer (including dead border)
+    gl_init(grid_bordered_width, grid_bordered_height, GL_DOUBLEBUFFER); 
+    unsigned int fb_padded_width = fb_get_pitch() / fb_get_depth(); 
+
+    // GOL settings
+    unsigned int colors[2] = {GL_BLACK, GL_WHITE};
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+
+    // populate grid with shapes
+    unsigned int *cur_state = fb_get_draw_buffer();
+    populate_life(cur_state, fb_padded_width, colors[1]);
+
+    gl_swap_buffer();
+    timer_delay(1);
+    unsigned int *next_state = fb_get_draw_buffer();
+
+    unsigned int (*cur_2d)[fb_padded_width] = (void *)cur_state;
+    unsigned int (*next_2d)[fb_padded_width] = (void *)next_state;
+
+    // move a sliding window of 16 through the grid
+    // coordinates in terms of what is displayed (excluding border)
+    // do r + 1 and c + 1 to see true coordinates (including the border)
+    unsigned int number_of_uniforms = 8; 
+
+    qpu_init();
+
+    unsigned result_ptr = qpu_malloc(16);
+    unsigned uniforms[] = {
+      (unsigned) grid_height, // number of rows
+      (unsigned) grid_width, // number of columns
+      (unsigned) fb_padded_width, // fb padded width
+      (unsigned) colors[0], // off color
+      (unsigned) colors[1], // on color
+      (unsigned) cur_state, // prev state
+      (unsigned) next_state, // next state
+      result_ptr
+    };
+    printf("gpu updating state for sliding window\n");
+    qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+    while (qpu_request_count() != qpu_complete_count()) {}
+    assert(qpu_request_count() == qpu_complete_count());
+    assert(qpu_complete_count() == 1);    
+    
+    next_2d[0][0] = GL_WHITE;
+    next_2d[0][1] = GL_RED;
+    next_2d[0][2] = GL_BLUE;
+    next_2d[0][3] = GL_YELLOW;
+    next_2d[1][0] = GL_RED;
+    next_2d[2][0] = GL_BLUE;
+    next_2d[3][0] = GL_YELLOW;
+    next_2d[5][0] = GL_YELLOW;
+    gl_swap_buffer();
+    
+    timer_delay(1);
+    printf("done\n");
+    for (int j=0; j <= 16; j++) {
+        printf("word %d: %08x\n", j, *((unsigned int*)(result_ptr + 4*j)));
+    }
+    printf("framebuffer curstate %p, nextstate %p\n", cur_state, next_state);
+    int r = 0;
+    int c = 0;
+    printf("padded width: %d\n", fb_padded_width);
+
+    for (int r = 0; r < grid_height; r++) {
+      for (int c = 0; c < grid_width; c+=16) {
+        printf("write states %x\n", (unsigned) (next_state + fb_padded_width * (r + 1) + (c + 1)));
+      }
+    }
+
+    qpu_free(result_ptr);
+    uart_putchar(EOT);
+}
+
 
 void main(void)
 {
@@ -1069,7 +1160,9 @@ void main(void)
     // run_fb_life();
     // run_fb_life();
     // run_fb_life_stepped_unrolled();
-    run_fb_life_stepped(4);
+    // run_fb_life_stepped(4);
 
     // run_toy_life_stepped(4);
+
+    run_fb_life_nodriver();
 }

@@ -11,7 +11,7 @@ TEST 	    = build/test_ca_gpu.bin
 all: $(APPLICATION) $(TEST)
 
 # Object files needed to build the application binary.
-OBJECTS = $(addprefix build/, $(MY_MODULES) start.o spi.o randomHardware.o)
+OBJECTS = $(addprefix build/, $(MY_MODULES) cstart.o start.o spi.o randomHardware.o)
 
 # Flags for compile and link
 export warn = -Wall -Wpointer-arith -Wwrite-strings -Werror \
