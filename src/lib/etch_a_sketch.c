@@ -6,16 +6,11 @@
 #include "strings.h"
 #include "uart.h"
 
-// typedef struct {
-//   unsigned pin;     // gpio pin of button
-//   color_t color;    // button color
-//   unsigned led_pin; // gpio pin of corresponding led
-// } color_buttons_t;
-
-color_buttons_t color_buttons[] = {{WHITE_BUTTON, GL_WHITE, 12},
-                                   {BLACK_BUTTON, GL_BLACK, 00},
-                                   {RED_BUTTON, GL_RED, 06},
-                                   {BLUE_BUTTON, GL_BLUE, 05}};
+const color_buttons_t color_buttons[] = {
+    {GPIO_PIN20, GL_WHITE, GPIO_PIN12}, // white button
+    {GPIO_PIN16, GL_BLACK, GPIO_PIN0},  // black button
+    {GPIO_PIN26, GL_RED, GPIO_PIN6},    // red button
+    {GPIO_PIN19, GL_BLUE, GPIO_PIN5}};  // blue button
 
 const unsigned num_color_buttons =
     sizeof(color_buttons) / sizeof(color_buttons_t);
@@ -32,12 +27,13 @@ static bool color_in_states(color_t color, color_t color_states[],
   return false;
 }
 
-void etch_a_sketch(color_t color_states[], size_t num_colors) {
-  // store ringbuffer for button
-  // rb_t *rb = get_button_rb(MAIN_BUTTON);
-
+void etch_a_sketch(color_t color_states[], size_t num_colors,
+                   unsigned main_button) {
+  // default color is the first non-background color
   color_t curr_color = color_states[1];
 
+  // TODO: different starting size?
+  // TODO: gl_init and clear on ca_init/ca_load_profile?
   gl_init(100, 100, GL_DOUBLEBUFFER);
 
   // init gl with background color
@@ -60,7 +56,7 @@ void etch_a_sketch(color_t color_states[], size_t num_colors) {
     gl_draw_pixel(x, y, curr_color);
 
     // check if main button has detected a hold
-    if (check_button_dequeue(MAIN_BUTTON) == BUTTON_HOLD) {
+    if (check_button_dequeue(main_button) == BUTTON_HOLD) {
       break;
     }
 

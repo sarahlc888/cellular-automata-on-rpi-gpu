@@ -345,7 +345,8 @@ void ca_create_and_load_preset(const char *fname, preset_fn_t make_preset,
  *
  * It should also be preceded by a function that loads a preset.
  */
-void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run) {
+void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
+            unsigned int main_button) {
   // display the initial state
   ca.cur_state = fb_get_draw_buffer();
   gl_swap_buffer();
@@ -375,7 +376,7 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run) {
     total_updates++;
 
     // end ca if main button was held down
-    if (check_button_dequeue(MAIN_BUTTON) == BUTTON_HOLD) {
+    if (check_button_dequeue(main_button) == BUTTON_HOLD) {
       break;
     }
   }
