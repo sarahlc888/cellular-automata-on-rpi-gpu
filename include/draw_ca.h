@@ -33,5 +33,6 @@ typedef unsigned int (*preset_fn_t)(unsigned int width, unsigned int height, uns
 void create_life_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 void create_ww_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 void create_life_preset2(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+void create_random_life_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 
 #endif

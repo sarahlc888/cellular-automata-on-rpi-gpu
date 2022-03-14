@@ -6,4 +6,9 @@ _start:
     mov sp, #0x8000000
     mov fp, #0
     bl _cstart
-hang: b hang
+set_delay:
+    mov r0, #0xff000
+delay:
+    subs r0, r0, #1
+    bpl delay
+bootloader: b 0x200000
