@@ -336,3 +336,13 @@ void create_ww_preset(unsigned int width, unsigned int height,
   ww_draw_vert_line(9, 12, 3, state, padded_width, colors[3]);
   ww_draw_gate(WW_AND, 6, 12, 2, 1, 0, 0, state, padded_width, colors);
 }
+
+/*
+ * Function: create_custom_preset
+ * --------------------------
+ * This function is intended as a placeholder to run on etch-a-sketch input, so
+ * it should not draw anything on the screen
+ */
+void create_custom_preset(unsigned int width, unsigned int height,
+                          unsigned int padded_width, void *state,
+                          color_t *colors) {}
