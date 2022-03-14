@@ -21,10 +21,8 @@ static void handle_button(unsigned pc, void *aux_data) {
   if (stop - start > 10000) {     // deal with debouncing
     if (stop - start > 1000000) { // hold time is 1s
       rb_enqueue(rb, BUTTON_HOLD);
-      uart_putchar('1');
     } else {
       rb_enqueue(rb, BUTTON_PRESS);
-      uart_putchar('0');
     }
   }
 }

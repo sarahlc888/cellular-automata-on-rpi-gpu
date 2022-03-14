@@ -5,7 +5,7 @@
 #include "draw_ca.h"
 
 // cellular automata modes supported
-typedef enum { LIFE = 0, WIREWORLD = 1 } ca_mode_t;
+typedef enum { LIFE = 0, WIREWORLD = 1, CUSTOM_LIFE = 2, CUSTOM_WIREWORLD = 3} ca_mode_t;
 
 /*
  * This typedef gives a nickname to the type of function pointer used as the

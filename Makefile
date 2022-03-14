@@ -2,24 +2,16 @@
 # TODO: edit APPLICATION to name of project application from src/apps
 # TODO: edit TEST to name of unit test program from src/tests
 
-<<<<<<< HEAD
 MY_MODULES = ca.o read_write_ca.o draw_ca.o mcp3008.o button.o
 
 # Targets for this makefile
 APPLICATION = build/project-app.bin
 TEST 	    = build/test_menu.bin
-=======
-MY_MODULES = ca.o read_write_ca.o draw_ca.o mcp3008.o randomHardware.o system.o profile.o mailbox_functions.o qpu.o 
-
-# Targets for this makefile
-APPLICATION = build/project-app.bin
-TEST 	    = build/test_gpu.bin
->>>>>>> beeac468e4a16f42a33b6f5cb72da97937963041
 
 all: $(APPLICATION) $(TEST)
 
 # Object files needed to build the application binary.
-OBJECTS = $(addprefix build/, $(MY_MODULES) start.o cstart.o spi.o)
+OBJECTS = $(addprefix build/, $(MY_MODULES) start.o spi.o randomHardware.o)
 
 # Flags for compile and link
 export warn = -Wall -Wpointer-arith -Wwrite-strings -Werror \

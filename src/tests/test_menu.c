@@ -78,6 +78,10 @@ void main() {
 
   display_menu(&choice);
 
+  // variables for ca
+  unsigned save_preset = 0;
+  unsigned use_time_limit = 1;
+
   // Run the game corresponding to the choice
   if (choice == LIFE) {
 
@@ -91,8 +95,9 @@ void main() {
     ca_init(LIFE, 50, 50, color_states, delay_ms);
     // ca_init(LIFE, 1000, 1000, color_states, 1000)
 
-    ca_create_and_load_preset(preset_file, (preset_fn_t)create_life_preset2);
-    ca_run(run_time);
+    ca_create_and_load_preset(preset_file, (preset_fn_t)create_life_preset2,
+                              save_preset);
+    ca_run(use_time_limit, run_time);
 
   } else if (choice == WIREWORLD) {
 
@@ -104,8 +109,9 @@ void main() {
     // run wireworld
     gl_init(100, 100, GL_DOUBLEBUFFER);
     ca_init(WIREWORLD, 100, 100, color_states, delay_ms);
-    ca_create_and_load_preset(preset_file, (preset_fn_t)create_ww_preset);
-    ca_run(run_time);
+    ca_create_and_load_preset(preset_file, (preset_fn_t)create_ww_preset,
+                              save_preset);
+    ca_run(use_time_limit, run_time);
 
   } else if (choice == CUSTOM_LIFE) {
 
@@ -145,7 +151,7 @@ void main() {
     unsigned int delay_ms = 100;
     unsigned int run_time = 1000000 * 1000;
     ca_init(LIFE, gl_get_width(), gl_get_height(), color_states, delay_ms);
-    ca_run(run_time);
+    ca_run(use_time_limit, run_time);
   } else if (choice == CUSTOM_WIREWORLD) {
 
     // store ringbuffer for button
@@ -191,7 +197,7 @@ void main() {
     unsigned int delay_ms = 1000;
     unsigned int run_time = 1000000 * 100;
     ca_init(WIREWORLD, gl_get_width(), gl_get_height(), color_states, delay_ms);
-    ca_run(run_time);
+    ca_run(use_time_limit, run_time);
   }
 
   printf("chose %s\n", ca_types[choice]);
