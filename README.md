@@ -1,9 +1,27 @@
 # sarahlc888-aviously25-project
-## Project title
+## Demo plan (for Avi)
+- Show Life
+    - Random
+    - One with some cool patterns/oscillators
+    - Fancy one that Avi will make/find (with logic !)
+    - Custom (etch-a-sketch)
+- Show WireWorld
+    - Fancy one that Avi will make/find
+    - Custom
+- Could do Langton's loop
+    - Might not have time but Avi can do it if he has time
 
+
+## Project title
+Icarus
+CAsseiopia
+CAllisto
 ## Team members
 
 To Do - Avi
+- Decide the resolution (aiming 1024, any multiple of GPU)
+- Then file compression (needed for big start states) 
+
 - Physical interface (make a board)
 - Better UI to select CA type then preset option
 - Start/stop simulation w button 
@@ -12,11 +30,9 @@ To Do - Avi
 
 To Do - Sarah
 - Get basic GPU working 
-- Decide the resolution (aiming 1024)
-- Then file compression (needed for big start states) 
 - Make 3 presets for each CA (4th is custom)
 - Speed up GPU / improve approach in general
-- Add more CA
+- Add more CA (langton's loop would be super cool)
 - Could vectorize wireworld 
 ## Project description
 ### Components
@@ -52,7 +68,7 @@ GPU research
 - A past CS 107E GPU project, "Bare Metal C QPU Library for the Raspberry Pi" by ahconkey and JoshFrancisCodes [(GitHub)](https://github.com/cs107e/ahconkey-JoshFrancisCodes-project)
     - Before being given access to this code, we did thorough independent research that covered many of their project's references (especially the sources that they heavily based their code on). However, their code was an invaluable starting point because unlike those references, it was baremetal and used the CS 107E mailbox code.
     - This code was particularly helpful in demonstrating: how to submit a program to the GPU by directly writing to GPU registers, how to allocate/free/lock memory for the GPU, how to use `#include` to load assembled QPU programs (and in guiding us to use the [vc4asm](http://maazl.de/project/vc4asm/doc/) assembler).
-    - We use their `mailbox_functions` and `qpu` modules in their entirety, with only minor changes.
+    - We use their `mailbox_functions` and `qpu` modules in their entirety. The `mailbox_functions` module contained a nasty bug that required hours to remove.
     - Note: the code did not compile in its given form, so many adjustments were made. Almost all work hours involving the GPU centered around getting a simple poke program to consistently work by consulting this code as well as well as the below references. (The next steps were working with loading/storing more complicated vectors.)
 - [Hacking The GPU For Fun And Profit](https://rpiplayground.wordpress.com/category/gpu/)
     - Our QPU assembly code was heavily based off of the accompanying [GitHub repository](https://github.com/elorimer/rpi-playground), especially the `helloworld` and `SHA-256` examples.
