@@ -354,44 +354,44 @@ void run_2d_input(void)
 }
 
 // Test game of life in malloc-ed memory of 1s and 0s
-void populate_life(void *ptr, unsigned int grid_padded_width)
+void populate_life(void *ptr, unsigned int grid_bordered_width, unsigned int on_state)
 {
-    unsigned int (*in_2d)[grid_padded_width] = ptr;
+    unsigned int (*in_2d)[grid_bordered_width] = ptr;
 
-    in_2d[2][2] = 1;
-    in_2d[2][3] = 1;
-    in_2d[3][2] = 1;
-    in_2d[3][3] = 1;
+    in_2d[2][2] = on_state;
+    in_2d[2][3] = on_state;
+    in_2d[3][2] = on_state;
+    in_2d[3][3] = on_state;
 
-    in_2d[2][5] = 1;
-    in_2d[2][6] = 1;
-    in_2d[2][7] = 1;
+    in_2d[2][5] = on_state;
+    in_2d[2][6] = on_state;
+    in_2d[2][7] = on_state;
 
-    in_2d[2][9] = 1;
-    in_2d[1][10] = 1;
-    in_2d[3][10] = 1;
-    in_2d[1][11] = 1;
-    in_2d[3][11] = 1;
-    in_2d[2][12] = 1;
+    in_2d[2][9] = on_state;
+    in_2d[1][10] = on_state;
+    in_2d[3][10] = on_state;
+    in_2d[1][11] = on_state;
+    in_2d[3][11] = on_state;
+    in_2d[2][12] = on_state;
 
-    in_2d[1][14] = 1;
+    in_2d[1][14] = on_state;
 
-    in_2d[1][17] = 1;
-    in_2d[2][17] = 1;
-    in_2d[3][17] = 1;
+    in_2d[1][17] = on_state;
+    in_2d[2][17] = on_state;
+    in_2d[3][17] = on_state;
 
-    in_2d[2][21] = 1;
-    in_2d[2][22] = 1;
-    in_2d[2][23] = 1;
+    in_2d[2][21] = on_state;
+    in_2d[2][22] = on_state;
+    in_2d[2][23] = on_state;
 
-    in_2d[2][25] = 1;
-    in_2d[2][26] = 1;
-    in_2d[3][25] = 1;
-    in_2d[3][26] = 1;
+    in_2d[2][25] = on_state;
+    in_2d[2][26] = on_state;
+    in_2d[3][25] = on_state;
+    in_2d[3][26] = on_state;
 
-    in_2d[1][30] = 1;
-    in_2d[2][31] = 1;
-    in_2d[3][32] = 1;
+    in_2d[1][30] = on_state;
+    in_2d[2][31] = on_state;
+    in_2d[3][32] = on_state;
 }
 void run_toy_life(void)
 {
@@ -417,20 +417,20 @@ void run_toy_life(void)
     // 2D array that has 3 rows and 32 columns
     unsigned int grid_width = 32;
     unsigned int grid_height = 3;
-    unsigned int grid_padded_width = grid_width + 2;
-    unsigned int grid_padded_height = grid_height + 2;
-    unsigned int *input_ptr = malloc(4 * (grid_padded_width * grid_padded_height));
-    unsigned int (*in_2d)[grid_padded_width] = (void *)input_ptr;
+    unsigned int grid_bordered_width = grid_width + 2;
+    unsigned int grid_bordered_height = grid_height + 2;
+    unsigned int *input_ptr = malloc(4 * (grid_bordered_width * grid_bordered_height));
+    unsigned int (*in_2d)[grid_bordered_width] = (void *)input_ptr;
 
-    unsigned int *next_ptr = malloc(4 * (grid_padded_width * grid_padded_height));
-    unsigned int (*next_2d)[grid_padded_width] = (void *)next_ptr;
+    unsigned int *next_ptr = malloc(4 * (grid_bordered_width * grid_bordered_height));
+    unsigned int (*next_2d)[grid_bordered_width] = (void *)next_ptr;
 
     // populate grid
-    for (int i = 0; i < grid_padded_height * grid_padded_width; i++) {
+    for (int i = 0; i < grid_bordered_height * grid_bordered_width; i++) {
         input_ptr[i] = 0;
     }
     // make shapes
-    populate_life(input_ptr, grid_padded_width);
+    populate_life(input_ptr, grid_bordered_width, 1);
 
     for (int r = 0; r < grid_height; r++) {
         // move through 16 columns at a time
@@ -450,10 +450,10 @@ void run_toy_life(void)
 
 
             // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
-            unsigned int *cell = input_ptr + grid_padded_width * (r + 1) + (c + 1);
-            unsigned int *nw_neigh = input_ptr + grid_padded_width * (r) + (c);
-            unsigned int *w_neigh = input_ptr + grid_padded_width * (r + 1) + (c);
-            unsigned int *sw_neigh = input_ptr + grid_padded_width * (r + 2) + (c);
+            unsigned int *cell = input_ptr + grid_bordered_width * (r + 1) + (c + 1);
+            unsigned int *nw_neigh = input_ptr + grid_bordered_width * (r) + (c);
+            unsigned int *w_neigh = input_ptr + grid_bordered_width * (r + 1) + (c);
+            unsigned int *sw_neigh = input_ptr + grid_bordered_width * (r + 2) + (c);
 
             // printf("%d\n", *cell);
 
@@ -499,6 +499,7 @@ void run_toy_life(void)
 }
 
 // Test if the GPU can write into the framebuffer
+// (pass the pointer to the fb and the input pointer)
 void write_into_framebuffer(void)
 {
     uart_init(); 
@@ -565,6 +566,488 @@ void write_into_framebuffer(void)
     uart_putchar(EOT);
 }
 
+void run_fb_life(void)
+{
+    uart_init(); 
+
+    unsigned program[] = {
+        #include "fb_life.c"   
+    };
+    
+    // 2D array that has 3 rows and 32 columns
+    unsigned int border_width = 1; // TODO: actually use this
+    unsigned int grid_width = 32;
+    unsigned int grid_height = 3;
+    unsigned int grid_bordered_width = grid_width + 2;
+    unsigned int grid_bordered_height = grid_height + 2;
+
+    // initialize frame buffer (including dead border)
+    gl_init(grid_bordered_width, grid_bordered_height, GL_DOUBLEBUFFER); 
+    unsigned int fb_padded_width = fb_get_pitch() / fb_get_depth(); 
+
+    // GOL settings
+    unsigned int colors[2] = {GL_BLACK, GL_WHITE};
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+
+    // populate grid with shapes
+    unsigned int *cur_state = fb_get_draw_buffer();
+    populate_life(cur_state, fb_padded_width, colors[1]);
+
+    gl_swap_buffer();
+    timer_delay(1);
+    unsigned int *next_state = fb_get_draw_buffer();
+
+    unsigned int (*cur_2d)[fb_padded_width] = (void *)cur_state;
+    unsigned int (*next_2d)[fb_padded_width] = (void *)next_state;
+
+    // move a sliding window of 16 through the grid
+    // coordinates in terms of what is displayed (excluding border)
+    // do r + 1 and c + 1 to see true coordinates (including the border)
+    unsigned int number_of_uniforms = 7; 
+    for (int r = 0; r < grid_height; r++) {
+        for (int c = 0; c < grid_width; c+=16) {
+            qpu_init();
+            
+            // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
+            unsigned int *cell = cur_state + fb_padded_width * (r + 1) + (c + 1);
+            unsigned int *nw_neigh = cur_state + fb_padded_width * (r) + (c);
+            unsigned int *w_neigh = cur_state + fb_padded_width * (r + 1) + (c);
+            unsigned int *sw_neigh = cur_state + fb_padded_width * (r + 2) + (c);
+
+            // get update address
+            unsigned result_ptr = (unsigned) (next_state + fb_padded_width * (r + 1) + (c + 1));
+            unsigned uniforms[] = {
+                colors[0], colors[1],
+                (unsigned) cell, 
+                (unsigned) nw_neigh, 
+                (unsigned) w_neigh, 
+                (unsigned) sw_neigh, 
+                result_ptr};
+            
+            qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+            
+            assert(qpu_request_count() == qpu_complete_count());
+            assert(qpu_complete_count() == 1);
+
+        }
+    }
+    gl_swap_buffer();
+    timer_delay(1);
+    uart_putchar(EOT);
+}
+
+// run the above for 5 steps
+void run_fb_life_stepped_unrolled(void)
+{
+    uart_init(); 
+    unsigned int number_of_uniforms = 7; 
+
+    unsigned program[] = {
+        #include "fb_life.c"   
+    };
+    
+    // 2D array that has 3 rows and 32 columns
+    unsigned int border_width = 1; // TODO: actually use this
+    unsigned int grid_width = 32;
+    unsigned int grid_height = 3;
+    unsigned int grid_bordered_width = grid_width + 2;
+    unsigned int grid_bordered_height = grid_height + 2;
+
+    // initialize frame buffer (including dead border)
+    gl_init(grid_bordered_width, grid_bordered_height, GL_DOUBLEBUFFER); 
+    unsigned int fb_padded_width = fb_get_pitch() / fb_get_depth(); 
+
+    // GOL settings
+    unsigned int colors[2] = {GL_BLACK, GL_WHITE};
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+
+    // populate grid with shapes
+    unsigned int *cur_state = fb_get_draw_buffer();
+    populate_life(cur_state, fb_padded_width, colors[1]);
+
+    // show start state
+    gl_swap_buffer(); 
+    timer_delay(1);
+    unsigned int *next_state = fb_get_draw_buffer();
+
+    // determine next state, based on cur state
+
+    // move a sliding window of 16 through the grid
+    // coordinates in terms of what is displayed (excluding border)
+    // do r + 1 and c + 1 to see true coordinates (including the border)
+    for (int r = 0; r < grid_height; r++) {
+        for (int c = 0; c < grid_width; c+=16) {
+            qpu_init();
+            unsigned uniforms[] = {
+                // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
+                colors[0], colors[1],
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c + 1)), 
+                (unsigned) (cur_state + fb_padded_width * (r) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 2) + (c)), 
+                // get update address
+                (unsigned) (next_state + fb_padded_width * (r + 1) + (c + 1)) 
+            };
+            qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+            assert(qpu_request_count() == qpu_complete_count());
+            assert(qpu_complete_count() == 1);
+        }
+    }
+    gl_swap_buffer(); // display the next state
+    timer_delay(1);
+    
+    cur_state = next_state;
+    next_state = fb_get_draw_buffer();
+
+    //////
+
+    for (int r = 0; r < grid_height; r++) {
+        for (int c = 0; c < grid_width; c+=16) {
+            qpu_init();
+            unsigned uniforms[] = {
+                // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
+                colors[0], colors[1],
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c + 1)), 
+                (unsigned) (cur_state + fb_padded_width * (r) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 2) + (c)), 
+                // get update address
+                (unsigned) (next_state + fb_padded_width * (r + 1) + (c + 1)) 
+            };
+            qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+            assert(qpu_request_count() == qpu_complete_count());
+            assert(qpu_complete_count() == 1);
+        }
+    }
+    gl_swap_buffer(); // display the next state
+    timer_delay(1);
+    
+    cur_state = next_state;
+    next_state = fb_get_draw_buffer();
+
+    //////
+
+    for (int r = 0; r < grid_height; r++) {
+        for (int c = 0; c < grid_width; c+=16) {
+            qpu_init();
+            unsigned uniforms[] = {
+                // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
+                colors[0], colors[1],
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c + 1)), 
+                (unsigned) (cur_state + fb_padded_width * (r) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 2) + (c)), 
+                // get update address
+                (unsigned) (next_state + fb_padded_width * (r + 1) + (c + 1)) 
+            };
+            qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+            assert(qpu_request_count() == qpu_complete_count());
+            assert(qpu_complete_count() == 1);
+        }
+    }
+    gl_swap_buffer(); // display the next state
+    timer_delay(1);
+    
+    cur_state = next_state;
+    next_state = fb_get_draw_buffer();
+
+    //////
+
+    for (int r = 0; r < grid_height; r++) {
+        for (int c = 0; c < grid_width; c+=16) {
+            qpu_init();
+            unsigned uniforms[] = {
+                // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
+                colors[0], colors[1],
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c + 1)), 
+                (unsigned) (cur_state + fb_padded_width * (r) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 2) + (c)), 
+                // get update address
+                (unsigned) (next_state + fb_padded_width * (r + 1) + (c + 1)) 
+            };
+            qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+            assert(qpu_request_count() == qpu_complete_count());
+            assert(qpu_complete_count() == 1);
+        }
+    }
+    gl_swap_buffer(); // display the next state
+    timer_delay(1);
+    
+    cur_state = next_state;
+    next_state = fb_get_draw_buffer();
+
+    //////
+    for (int r = 0; r < grid_height; r++) {
+        for (int c = 0; c < grid_width; c+=16) {
+            qpu_init();
+            unsigned uniforms[] = {
+                // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
+                colors[0], colors[1],
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c + 1)), 
+                (unsigned) (cur_state + fb_padded_width * (r) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 1) + (c)), 
+                (unsigned) (cur_state + fb_padded_width * (r + 2) + (c)), 
+                // get update address
+                (unsigned) (next_state + fb_padded_width * (r + 1) + (c + 1)) 
+            };
+            qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+            assert(qpu_request_count() == qpu_complete_count());
+            assert(qpu_complete_count() == 1);
+        }
+    }
+    gl_swap_buffer(); // display the next state
+    timer_delay(1);
+    
+    cur_state = next_state;
+    next_state = fb_get_draw_buffer();
+
+    //////
+
+
+
+
+    timer_delay(1);
+    uart_putchar(EOT);
+
+}
+
+
+// run the above for 5 steps
+void populate_vol_life(volatile unsigned int *ptr, unsigned int grid_bordered_width, unsigned int on_state)
+{
+    unsigned int (*in_2d)[grid_bordered_width] = (void *) ptr;
+
+    in_2d[2][2] = on_state;
+    in_2d[2][3] = on_state;
+    in_2d[3][2] = on_state;
+    in_2d[3][3] = on_state;
+
+    in_2d[2][5] = on_state;
+    in_2d[2][6] = on_state;
+    in_2d[2][7] = on_state;
+
+    in_2d[2][9] = on_state;
+    in_2d[1][10] = on_state;
+    in_2d[3][10] = on_state;
+    in_2d[1][11] = on_state;
+    in_2d[3][11] = on_state;
+    in_2d[2][12] = on_state;
+
+    in_2d[1][14] = on_state;
+
+    in_2d[1][17] = on_state;
+    in_2d[2][17] = on_state;
+    in_2d[3][17] = on_state;
+
+    in_2d[2][21] = on_state;
+    in_2d[2][22] = on_state;
+    in_2d[2][23] = on_state;
+
+    in_2d[2][25] = on_state;
+    in_2d[2][26] = on_state;
+    in_2d[3][25] = on_state;
+    in_2d[3][26] = on_state;
+
+    in_2d[1][30] = on_state;
+    in_2d[2][31] = on_state;
+    in_2d[3][32] = on_state;
+}
+void run_fb_life_stepped(unsigned int num_steps)
+{
+    uart_init(); 
+    unsigned int number_of_uniforms = 7; 
+
+    unsigned program[] = {
+        #include "fb_life.c"   
+    };
+    
+    // 2D array that has 3 rows and 32 columns
+    unsigned int border_width = 1; // TODO: actually use this
+    unsigned int grid_width = 32;
+    unsigned int grid_height = 3;
+    unsigned int grid_bordered_width = grid_width + 2;
+    unsigned int grid_bordered_height = grid_height + 2;
+
+    // initialize frame buffer (including dead border)
+    gl_init(grid_bordered_width, grid_bordered_height, GL_DOUBLEBUFFER); 
+    unsigned int fb_padded_width = fb_get_pitch() / fb_get_depth(); 
+
+    // GOL settings
+    unsigned int colors[2] = {GL_BLACK, GL_WHITE};
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+
+    // populate grid with shapes
+    volatile unsigned int *cur_state = fb_get_draw_buffer();
+    populate_vol_life(cur_state, fb_padded_width, colors[1]);
+
+    // show start state
+    gl_swap_buffer(); 
+    timer_delay(1);
+    volatile unsigned int *next_state = fb_get_draw_buffer();
+
+    // determine next state, based on cur state
+
+    // move a sliding window of 16 through the grid
+    // coordinates in terms of what is displayed (excluding border)
+    // do r + 1 and c + 1 to see true coordinates (including the border)
+
+    for (int i = 0; i < 5; i++) {
+        for (int r = 0; r < grid_height; r++) {
+            for (int c = 0; c < grid_width; c+=16) {
+                qpu_init();
+                unsigned uniforms[] = {
+                    // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
+                    colors[0], colors[1],
+                    (unsigned) (cur_state + fb_padded_width * (r + 1) + (c + 1)), 
+                    (unsigned) (cur_state + fb_padded_width * (r) + (c)), 
+                    (unsigned) (cur_state + fb_padded_width * (r + 1) + (c)), 
+                    (unsigned) (cur_state + fb_padded_width * (r + 2) + (c)), 
+                    // get update address
+                    (unsigned) (next_state + fb_padded_width * (r + 1) + (c + 1)) 
+                };
+                qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+                assert(qpu_request_count() == qpu_complete_count());
+                assert(qpu_complete_count() == 1);
+            }
+        }
+        gl_swap_buffer(); // display the next state
+        timer_delay(1);
+        
+        cur_state = next_state;
+        next_state = fb_get_draw_buffer();
+        
+    }    
+
+    timer_delay(1);
+    uart_putchar(EOT);
+
+}
+
+void run_toy_life_stepped(unsigned int num_steps)
+{
+    // Expected input
+    // 0 0 0 0 0 0 0 0 0 1 1 0 0 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 
+    // 0 1 1 0 1 1 1 0 1 0 0 1 0 0 0 0 1 0 0 0 1 1 1 0 1 1 0 0 0 0 1 0 
+    // 0 1 1 0 0 0 0 0 0 1 1 0 0 0 0 0 1 0 0 0 0 0 0 0 1 1 0 0 0 0 0 1 
+
+    // Expected output
+    // 0 0 0 0 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 
+    // 0 1 1 1 0 1 0 0 1 0 0 1 0 0 0 1 1 1 0 0 0 1 0 1 1 1 0 0 0 0 1 0 
+    // 0 1 1 1 0 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 1 0 1 1 1 0 0 0 0 0 0 
+
+
+    uart_init(); 
+
+    unsigned program[] = {
+        #include "toy_life.c"   
+    };
+
+    unsigned int number_of_uniforms = 5;
+    
+    // 2D array that has 3 rows and 32 columns
+    unsigned int grid_width = 32;
+    unsigned int grid_height = 3;
+    unsigned int grid_bordered_width = grid_width + 2;
+    unsigned int grid_bordered_height = grid_height + 2;
+    unsigned int *input_ptr = malloc(4 * (grid_bordered_width * grid_bordered_height));
+    unsigned int (*in_2d)[grid_bordered_width] = (void *)input_ptr;
+
+    unsigned int *next_ptr = malloc(4 * (grid_bordered_width * grid_bordered_height));
+    
+
+    // populate grid
+    for (int i = 0; i < grid_bordered_height * grid_bordered_width; i++) {
+        input_ptr[i] = 0;
+    }
+    // make shapes
+    populate_life(input_ptr, grid_bordered_width, 1);
+
+    for (int r = 0; r < grid_height; r++) {
+        // move through 16 columns at a time
+        for (int c = 0; c < grid_width; c++) {
+            printf("%d ", in_2d[r + 1][c + 1]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+
+    for (int s = 0; s < num_steps; s++) {
+        unsigned int (*next_2d)[grid_bordered_width] = (void *)next_ptr;
+        
+        // move through each row
+        for (int r = 0; r < grid_height; r++) {
+            for (int c = 0; c < grid_width; c+=16) {
+                qpu_init();
+
+                
+                    
+                // printf("r %d, c %d\n", r, c);
+
+
+                // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
+                unsigned int *cell = input_ptr + grid_bordered_width * (r + 1) + (c + 1);
+                unsigned int *nw_neigh = input_ptr + grid_bordered_width * (r) + (c);
+                unsigned int *w_neigh = input_ptr + grid_bordered_width * (r + 1) + (c);
+                unsigned int *sw_neigh = input_ptr + grid_bordered_width * (r + 2) + (c);
+
+                // printf("%d\n", *cell);
+
+                unsigned result_ptr = qpu_malloc(16);
+                unsigned uniforms[] = {
+                    (unsigned) cell, 
+                    (unsigned) nw_neigh, 
+                    (unsigned) w_neigh, 
+                    (unsigned) sw_neigh, 
+                    result_ptr};
+                
+                qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
+                
+                assert(qpu_request_count() == qpu_complete_count());
+                // completed++;
+                assert(qpu_complete_count() == 1);
+
+                // TODO: store results back in the grid
+                for (int j=0; j < 16; j++) {
+                    // printf("%d ", *((unsigned int*)(result_ptr + 4*j)));
+                    next_2d[r + 1][c + 1 + j] = *((unsigned int*)(result_ptr + 4*j));
+                }
+                // printf("--\n");
+                
+                qpu_free(result_ptr);
+
+            }
+        }
+
+        for (int r = 0; r < grid_height; r++) {
+            // move through 16 columns at a time
+            for (int c = 0; c < grid_width; c++) {
+                printf("%d ", next_2d[r + 1][c + 1]);
+            }
+            printf("\n");
+        }
+        printf("\n");
+
+        // old state
+        input_ptr = next_ptr;
+    }
+
+    free(input_ptr);
+    free(next_ptr);
+
+    uart_putchar(EOT);
+}
+
+
 void main(void)
 {
     // run_helloworld();
@@ -580,5 +1063,13 @@ void main(void)
 
     // run_toy_life();
 
-    write_into_framebuffer();
+    // write_into_framebuffer();
+    // write_into_framebuffer();
+
+    // run_fb_life();
+    // run_fb_life();
+    // run_fb_life_stepped_unrolled();
+    run_fb_life_stepped(4);
+
+    // run_toy_life_stepped(4);
 }
