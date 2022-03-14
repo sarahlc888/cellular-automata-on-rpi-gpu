@@ -15,6 +15,7 @@
 #include "../../include/mailbox_functions.h"
 #include "../../include/qpu.h"
 #include "../../include/randomHardware.h"
+#include "gl.h"
 
 #define PHYS_TO_BUS(x) ((x)|0xC0000000)
 #define SIZE(x) sizeof(x)/sizeof(x[0])
@@ -351,137 +352,8 @@ void run_2d_input(void)
 
     uart_putchar(EOT);
 }
-/*
-void run_toy_life(void)
-{
-    uart_init(); 
-    qpu_init();
 
-    unsigned program[] = {
-        #include "toy_life.c"   
-    };
-
-    unsigned int number_of_uniforms = 5;
-    
-    // 2D array that has 4 rows and 32 columns
-    unsigned int grid_width = 32;
-    unsigned int grid_height = 3;
-    unsigned int grid_padded_width = grid_width + 2;
-    unsigned int grid_padded_height = grid_height + 2;
-    unsigned int *input_ptr = malloc(4 * (grid_padded_width * grid_padded_height));
-    unsigned int (*in_2d)[grid_padded_width] = (void *)input_ptr;
-
-    unsigned int *next_ptr = malloc(4 * (grid_padded_width * grid_padded_height));
-    unsigned int (*next_2d)[grid_padded_width] = (void *)next_ptr;
-
-    // populate grid
-    for (int i = 0; i < grid_padded_height * grid_padded_width; i++) {
-        input_ptr[i] = 0;
-    }
-    // make shapes
-    in_2d[2][2] = 1;
-    in_2d[2][3] = 1;
-    in_2d[3][2] = 1;
-    in_2d[3][3] = 1;
-
-    in_2d[2][5] = 1;
-    in_2d[2][6] = 1;
-    in_2d[2][7] = 1;
-
-    in_2d[2][9] = 1;
-    in_2d[1][10] = 1;
-    in_2d[3][10] = 1;
-    in_2d[1][11] = 1;
-    in_2d[3][11] = 1;
-    in_2d[2][12] = 1;
-
-    in_2d[1][14] = 1;
-
-    in_2d[1][17] = 1;
-    in_2d[2][17] = 1;
-    in_2d[3][17] = 1;
-
-    in_2d[2][21] = 1;
-    in_2d[2][22] = 1;
-    in_2d[2][23] = 1;
-
-    in_2d[2][25] = 1;
-    in_2d[2][26] = 1;
-    in_2d[3][25] = 1;
-    in_2d[3][26] = 1;
-
-    in_2d[1][30] = 1;
-    in_2d[2][31] = 1;
-    in_2d[3][32] = 1;
-
-    for (int r = 0; r < grid_height; r++) {
-        // move through 16 columns at a time
-        for (int c = 0; c < grid_width; c++) {
-            printf("%d ", in_2d[r + 1][c + 1]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-    // move through each row
-    int completed = 0;
-    for (int r = 0; r < grid_height; r++) {
-        // move through 16 columns at a time
-        for (int c = 0; c < grid_width; c+=16) {
-            
-            // r and c within the padded grid are r + 1 and c + 1
-
-            // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
-            unsigned int *cell = input_ptr + grid_padded_width * (r + 1) + (c + 1);
-            unsigned int *nw_neigh = input_ptr + grid_padded_width * (r) + (c);
-            unsigned int *w_neigh = input_ptr + grid_padded_width * (r + 1) + (c);
-            unsigned int *sw_neigh = input_ptr + grid_padded_width * (r + 2) + (c);
-
-            // printf("%d ", *cell);
-
-            unsigned result_ptr = qpu_malloc(16);
-            unsigned uniforms[] = {
-                (unsigned) cell, 
-                (unsigned) nw_neigh, 
-                (unsigned) w_neigh, 
-                (unsigned) sw_neigh, 
-                result_ptr};
-            
-            qpu_run(program, SIZE(program), uniforms, number_of_uniforms); // FLAG change
-            
-            assert(qpu_request_count() == qpu_complete_count());
-            completed++;
-            assert(qpu_complete_count() == completed);
-
-            // TODO: store results back in the grid
-            for (int j=0; j < 16; j++) {
-                printf("%d ", *((unsigned int*)(result_ptr + 4*j)));
-                next_2d[r + 1][c + 1 + j] = *((unsigned int*)(result_ptr + 4*j));
-            }
-            
-            // FLAG change
-            qpu_free(result_ptr);
-        }
-        printf("\n");
-    }
-    printf("\n");
-
-    for (int r = 0; r < grid_height; r++) {
-        // move through 16 columns at a time
-        for (int c = 0; c < grid_width; c++) {
-            printf("%d ", next_2d[r + 1][c + 1]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-
-    free(input_ptr);
-    free(next_ptr);
-
-    uart_putchar(EOT);
-}
-
-*/
-
+// Test game of life in malloc-ed memory of 1s and 0s
 void populate_life(void *ptr, unsigned int grid_padded_width)
 {
     unsigned int (*in_2d)[grid_padded_width] = ptr;
@@ -626,6 +498,73 @@ void run_toy_life(void)
     uart_putchar(EOT);
 }
 
+// Test if the GPU can write into the framebuffer
+void write_into_framebuffer(void)
+{
+    uart_init(); 
+
+    // initialize the frame buffer
+    unsigned int screen_width = 16;
+    unsigned int screen_height = 16;
+    gl_init(screen_width, screen_height, GL_DOUBLEBUFFER); // initialize frame buffer
+    unsigned int padded_width = fb_get_pitch() / fb_get_depth(); 
+
+    unsigned int colors[2] = {GL_BLACK, GL_WHITE};
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+    gl_clear(colors[0]);
+    gl_swap_buffer();
+
+    unsigned int *state = fb_get_draw_buffer();
+    unsigned int (*state_2d)[padded_width] = (void *) state;
+
+    // write 1 pixel using the CPU
+    state_2d[0][0] = colors[1];
+    state_2d[1][1] = colors[1];
+    state_2d[2][2] = colors[1];
+    state_2d[3][3] = colors[1];
+    state_2d[4][2] = colors[1];
+
+
+
+    // write 1 row of pixels using the GPU
+    // (load a uniform for the FB addr and color, write it to the framebuffer)
+    int num_uniforms = 2;
+    
+    qpu_init();
+    unsigned program[] = {
+        #include "write_fb.c"   
+    };
+    
+    unsigned int *input_ptr = malloc(16 * 4);
+    for (int i = 0; i < 16; i++) {
+        input_ptr[i] = GL_BLACK;
+    }
+    input_ptr[0] = GL_YELLOW;
+    input_ptr[1] = GL_RED;
+    input_ptr[2] = GL_GREEN;
+    input_ptr[10] = GL_BLUE;
+
+    // unsigned result_ptr = qpu_malloc(16); //fb_get_draw_buffer();
+    unsigned result_ptr = (unsigned) fb_get_draw_buffer();
+    unsigned uniforms[] = {(unsigned) input_ptr, result_ptr};
+    
+    qpu_run(program, SIZE(program), uniforms, num_uniforms); // FLAG change
+    
+    printf("Requested: %d\n", qpu_request_count());
+    printf("Completed: %d\n", qpu_complete_count());
+
+    for (int j=0; j <= 16; j++) {
+        printf("word %d: %08x\n", j, *((unsigned int*)(result_ptr + 4*j)));
+    }
+    qpu_free(result_ptr);
+    free(input_ptr);
+
+    gl_swap_buffer();
+
+    uart_putchar(EOT);
+}
+
 void main(void)
 {
     // run_helloworld();
@@ -639,5 +578,7 @@ void main(void)
     // run_2d_input();
     // run_2d_input();
 
-    run_toy_life();
+    // run_toy_life();
+
+    write_into_framebuffer();
 }
