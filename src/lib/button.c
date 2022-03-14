@@ -48,4 +48,15 @@ int get_button(unsigned pin) {
   return event;
 }
 
-rb_t *get_button_rb(unsigned pin) { return rb; }
+// rb_t *get_button_rb(unsigned pin) { return rb; }
+
+button_event_t check_button_dequeue(unsigned pin) {
+  // if rb is empty, just return empty button
+  if (rb_empty(rb)) {
+    return BUTTON_EMPTY;
+  }
+
+  int event;
+  rb_dequeue(rb, &event);
+  return event;
+}

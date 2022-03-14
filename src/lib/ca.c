@@ -31,6 +31,7 @@
  */
 
 #include "../../include/ca.h"
+#include "../../include/button.h"
 #include "../../include/draw_ca.h"
 #include "../../include/read_write_ca.h"
 #include "fb.h"
@@ -84,16 +85,14 @@ void ca_init(ca_mode_t ca_mode, unsigned int screen_width,
              unsigned int update_delay) {
 
   // initialize GL for non-custom modes
-  if (ca_mode != CUSTOM_LIFE && ca_mode != CUSTOM_WIREWORLD) {
-    gl_init(screen_width, screen_height,
-            GL_DOUBLEBUFFER); // initialize frame buffer
+  gl_init(screen_width, screen_height,
+          GL_DOUBLEBUFFER); // initialize frame buffer
 
-    // init all pixels to background color (in both buffers)
-    gl_clear(colors[0]);
-    gl_swap_buffer();
-    gl_clear(colors[0]);
-    gl_swap_buffer();
-  }
+  // init all pixels to background color (in both buffers)
+  gl_clear(colors[0]);
+  gl_swap_buffer();
+  gl_clear(colors[0]);
+  gl_swap_buffer();
 
   // init global struct
   ca.mode = ca_mode;
@@ -374,6 +373,11 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run) {
 
     prev_ticks = timer_get_ticks();
     total_updates++;
+
+    // end ca if main button was held down
+    if (check_button_dequeue(MAIN_BUTTON) == BUTTON_HOLD) {
+      break;
+    }
   }
 
   printf("total updates: %d\n", total_updates);
