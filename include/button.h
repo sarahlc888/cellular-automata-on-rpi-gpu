@@ -9,6 +9,7 @@
  * is initialized, it creates a ringbuffer for that specific button, which can
  * later be enqueued to or dequeued from.
  */
+
 #ifndef BUTTON_H
 #define BUTTON_H
 

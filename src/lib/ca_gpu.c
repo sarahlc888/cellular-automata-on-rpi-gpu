@@ -57,6 +57,7 @@ typedef struct {
 
 static ca_config_t ca;
 const unsigned int border_width = 1; // pixel width of border for zero-padding
+FATFS fs;
 
 // CA mode table links titles, styled titles, and update functions
 static void gpu_life_update_state(void *prev, void *next);
@@ -115,7 +116,7 @@ void ca_init(ca_mode_t ca_mode, unsigned int screen_width,
   ca.update_ms = update_delay;
 
   // initialize file system
-  ca_ffs_init();
+  ca_ffs_init(&fs);
 }
 
 /*

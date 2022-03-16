@@ -1,6 +1,12 @@
-/*
- * Simple client example using fatfs to access filesystem on SD card
+/* Sarah Chen
+ * 03/15/2022
+ * Code for CS107E Final Project
+ *
+ * This module uses FAT FS to access files on the Raspberry Pi's SD card. The entire
+ * module is heavily based off of $CS107E/examples/sd_fatfs, but it has been adapted
+ * and expanded to write *.rgba files to store CA preset states.
  */
+
 #include "printf.h"
 #include "strings.h"
 #include "uart.h"
@@ -74,7 +80,11 @@ int recursive_scan(const char* path)
     return count;
 }
 
-// print function for debugging purposes
+/*
+ * Function: print_color_buf
+ * --------------------------
+ * Print function for debugging purposes
+ */
 static void print_color_buf(color_t buf[], unsigned int num_entries)
 {
     for (int i = 0; i < num_entries; i++) {
@@ -83,7 +93,11 @@ static void print_color_buf(color_t buf[], unsigned int num_entries)
     printf("\n");
 }
 
-// delete the specified file
+/*
+ * Function: remove_preset
+ * --------------------------
+ * Delete the specified preset file
+ */
 void remove_preset(const char *fname)
 {
     FRESULT res;
@@ -99,22 +113,16 @@ void remove_preset(const char *fname)
     printf("Removed file %s.\n",fname);
 }
 
-void write_compressed_preset(color_t writebuf[], color_t *colors, unsigned int buf_bytes, const char *fname)
-{
-    // write the colors array
-    // then write the values using 4 bits each (up to 16 states)
-    // TODO: SHL
-}
-
-// TODO: make read and write less verbose in terms of printing
-// write the given preset array to the file name
+/*
+ * Function: write_preset
+ * --------------------------
+ * Write the given preset to the SD card. 
+ */
 void write_preset(color_t writebuf[], unsigned int buf_bytes, const char *fname)
 {
     FRESULT res;
 
     // create a test file in the root directory
-    // see http://elm-chan.org/fsw/ff/doc/open.html
-    // for information about the f_open function
     printf("Creating file %s.\n", fname); 
     FIL fp;
     res = f_open(&fp, fname, FA_CREATE_ALWAYS | FA_WRITE);
@@ -124,8 +132,6 @@ void write_preset(color_t writebuf[], unsigned int buf_bytes, const char *fname)
     }
 
     // write something to the file
-    // see http://elm-chan.org/fsw/ff/doc/write.html
-    // for information about the f_write function
     unsigned int nwritten;
     res = f_write(&fp, writebuf, buf_bytes, &nwritten);
     if (res != FR_OK || nwritten != buf_bytes) {
@@ -139,7 +145,11 @@ void write_preset(color_t writebuf[], unsigned int buf_bytes, const char *fname)
     f_close(&fp);   // close file (should commit to media)
 }
 
-// read the given preset array from the file name
+/*
+ * Function: read_preset
+ * --------------------------
+ * Read the given preset array from the file name on the SD card.
+ */
 void read_preset(color_t readbuf[], unsigned int buf_bytes, const char *fname)
 {
     FRESULT res;
@@ -164,8 +174,6 @@ void read_preset(color_t readbuf[], unsigned int buf_bytes, const char *fname)
         return;
     }
     // read the entire file into a buffer
-    // see http://elm-chan.org/fsw/ff/doc/read.html
-    // for information about the f_read function
     unsigned int nread;
     res = f_read(&fp, readbuf, buf_bytes, &nread);
     if (res != FR_OK || nread != buf_bytes) {
@@ -173,12 +181,14 @@ void read_preset(color_t readbuf[], unsigned int buf_bytes, const char *fname)
         return;
     }
     printf("Read %d bytes from file %s:\n---\n", nread, fname); 
-    // print_color_buf(readbuf, buf_bytes / 4);
     printf("---\n"); 
-
-
 }
 
+/*
+ * Function: make_dir
+ * --------------------------
+ * Create the indicated directory
+ */
 int make_dir(const char *path)
 {
     FRESULT res;
@@ -191,7 +201,11 @@ int make_dir(const char *path)
     return 0;   
 }
 
-// initialize file system
+/*
+ * Function: ca_ffs_init
+ * --------------------------
+ * Initialize file system by mounting the SD card.
+ */
 void ca_ffs_init(FATFS *fs)
 {
     FRESULT res = f_mount(fs, "", 1);
@@ -200,32 +214,4 @@ void ca_ffs_init(FATFS *fs)
         return;
     }
 
-}
-
-// adapted from $CS107E/examples/sd_fatfs
-void run_tests(void) 
-{
-    uart_init();
-    printf("Starting libpisd.a test\n");
-
-    printf("initializing\n");
-
-    // TODO: does not work when using ca_ffs_init, probably
-    FATFS fs;
-    ca_ffs_init(&fs);
-
-    printf("scanning\n");
-    int n = recursive_scan(""); // start at root
-    printf("Scan found %d entries.\n\n", n);
-
-    make_dir("/presets");
-
-    color_t writebuf[] = {GL_BLACK, GL_WHITE, GL_RED, GL_ORANGE};
-    unsigned int bytes = sizeof writebuf;
-    color_t readbuf[bytes];
-    write_preset(writebuf, bytes, "/presets/curiously_long_filename.rgba");
-    read_preset(readbuf, bytes, "/presets/curiously_long_filename.rgba");
-    n = recursive_scan("/"); // start at root
-    remove_preset("/presets/curiously_long_filename.rgba");
-    n = recursive_scan("/"); // start at root
 }
