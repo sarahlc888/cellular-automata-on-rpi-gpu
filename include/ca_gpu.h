@@ -1,3 +1,12 @@
+/* Sarah Chen
+ * 03/15/2022
+ * Code for CS107E Final Project
+ *
+ * This module supports displaying cellular automata. The main steps are 
+ * initializing the automaton, possibly creating and loading a preset, and 
+ * running the simulation.
+ */
+
 #ifndef CAGPU_H
 #define CAGPU_H
 

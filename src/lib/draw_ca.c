@@ -2,11 +2,13 @@
  * 03/08/2022
  * Code for CS107E Final Project
  *
- * This module includes functions to draw various objects within a cellular
- * automata state. For Life, this includes oscillators, fixed patterns, 
- * gliders, and more. For WireWorld, this includes logic gates.
- *
- * TODO: catch case where you attempt to draw outside of fb
+ * This module includes structs for various objects/patterns for the cellular
+ * automata presetes. It also includes the functions needed to draw passed objects
+ * as well as higher-level functions to draw entire presets (or read them from
+ * RLE file format).
+ * 
+ * For Life, patterns include oscillators, gliders, and more. For WireWorld, 
+ * patterns are primarily logic gates.
  */
 
 #include "../../include/draw_ca.h"
@@ -63,6 +65,7 @@ gate_t and_gate = {.width = 15,
 
 static gate_t *gate_types[] = {&or_gate, &and_gate, &xor_gate};
 
+
 // Game of life patterns
 // still life
 pattern_t block = {.width = 2, .height = 2, .data = {1, 1, 1, 1}};
@@ -112,10 +115,13 @@ pattern_t glider_1 = {.width = 3,
                           0, 1, 1,
                       }};
 
-// RLE patterns
+
+// RLE patterns for Game of Life and WireWorld, taken directly from outside sources (see links)
+// https://conwaylife.com/wiki/Bunnies
 rle_pattern_t bunnies = {
     .width = 6, .height = 6, .data = "bo4b$2obo2b$4b2o$o2bo2b$o5b$o!"};
 
+// https://conwaylife.com/wiki/Karel%27s_p177
 rle_pattern_t karel_177_osc = {
     .width = 46,
     .height = 46,
@@ -125,6 +131,7 @@ rle_pattern_t karel_177_osc = {
             "b2o40b2o$b2o40b2o$2bo40bo4$16bo12bo$14b2ob2o8b2ob2o$"
             "8b3o3b2o14b2o3b3o$9b2o24b2o$16bo12bo!"};
 
+// https://conwaylife.com/wiki/Flying_wing
 rle_pattern_t flying_wing = {
     .width = 159,
     .height = 90,
@@ -176,6 +183,7 @@ rle_pattern_t flying_wing = {
         "$12b2o131b2o3$21bo115bo$21bobo111bobo$17b2o2b2o113b2o2b2o$ "
         "17b2o121b2o!"};
 
+// http://golly.sourceforge.net/
 rle_pattern_t ww_AND_gate_pattern = {
     .width = 60,
     .height = 60,
@@ -186,6 +194,7 @@ rle_pattern_t ww_AND_gate_pattern = {
         "$10.C24.C$A5C5.3C11.CA4C5.3C$6.C.C.C3.C16.C.C.C3.C$7.3C4.C17.3C4.C$8.C"
         ".C.C.C18.C.C.C.C$11.3C22.3C$12.C.10C13.C.10C"};
 
+// http://golly.sourceforge.net/
 rle_pattern_t ww_nh_multiplication = {
     .width = 400,
     .height = 200,
@@ -244,8 +253,8 @@ rle_pattern_t ww_nh_multiplication = {
         "CA3.A29.C3.A..C$9.C..7C.C59.BCC.BCCABCCABCCABCCABCCABCCABCCAB5.BC$9."
         "C.C6.3C$9.C.C7.C$9.C.C8.12C$10.C"};
 
-// Functions to draw patterns for various automata
 
+// Functions to draw further patterns for various automata
 /*
  * Function: ww_draw_vert_line
  * --------------------------
@@ -467,6 +476,7 @@ static void draw_rle_pattern(rle_pattern_t *pattern, int r, int c, void *state,
   }
 }
 
+// Functions to make presets for life and wireworld
 /*
  * Function: create_random_life_preset
  * --------------------------
@@ -514,7 +524,7 @@ void create_life_preset(unsigned int width, unsigned int height,
  * This function populates `state` with a custom preset state for Life that uses
  * more patterns.
  *
- * This requires at least a 32x32 screen
+ * This pattern is very small but requires at least a 32x32 screen.
  */
 void create_life_preset2(unsigned int width, unsigned int height,
                          unsigned int padded_width, void *state,

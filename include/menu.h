@@ -11,8 +11,8 @@
  * Implements a draw_text_centered helper function to make the menu look
  * nicer. The main function is 'display_menu()' which creates an interactive
  * menu using the configured options from its parameters
- *
  */
+
 #ifndef MENU_H
 #define MENU_H
 

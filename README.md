@@ -2,7 +2,9 @@
 ## Team members
 Avi Udash and Sarah Chen
 ## Project description
-Our project runs cellular automata simulations on the Raspberry Pi. It supports Conway's Game of Life and WireWorld
+Our project runs cellular automata simulations on the Raspberry Pi. It supports Conway's Game of Life and WireWorld.
+
+`make run` runs the application with the functionality described below, and there are also a variety of targets for `make test` (see src/tests) that test specific elements of the project.
 
 We also implemented a user interface to run the simulations. Users can select between types of cellular automata and presets using a button (short press to toggle options, long press to select), and they can start/stop the simulation using a button press too. 
 
@@ -47,6 +49,7 @@ Cellular automata library
 - We used code from Sarah's profiler extension of assignment 7 to evaluate performance
 - http://golly.sourceforge.net/Help/formats.html#rle
   - https://github.com/jimblandy/golly/blob/master/src/Patterns/WireWorld/NylesHeise.mcl
+  - https://conwaylife.com/wiki/Flying_wing
 - Reading and writing files to the SD card using [FAT File System](http://elm-chan.org/fsw/ff/00index_e.html), guided by the CS 107E [guide](http://cs107e.github.io/guides/extras/sd_library/)
 
 GPU

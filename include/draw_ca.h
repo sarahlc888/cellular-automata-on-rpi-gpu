@@ -1,3 +1,12 @@
+/* Sarah Chen
+ * 03/15/2022
+ * Code for CS107E Final Project
+ *
+ * This module supports various structs and functions for drawing cellular
+ * automata preset states, whether from specific pattern buidling blocks
+ * or from pre-made RLE file formats.
+ */
+
 #ifndef DRAWCA_H
 #define DRAWCA_H
 #include "gl.h"

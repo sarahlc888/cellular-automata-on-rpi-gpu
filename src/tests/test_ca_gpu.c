@@ -10,9 +10,39 @@
 #include "printf.h"
 #include "timer.h"
 #include "uart.h"
+#include "ff.h"
 
 // TODO: make this depend only on the top level library. Use typedef enum to
 // specify which preset function to use, rather than the function pointer itself
+
+// adapted from $CS107E/examples/sd_fatfs
+// TODO: clear this up or maybe remove. Def need to test it in the context of ca_gpu or whatever
+void run_fs_tests(void) 
+{
+    uart_init();
+    printf("Starting libpisd.a test\n");
+
+    printf("initializing\n");
+
+    FATFS fs;
+    ca_ffs_init(&fs);
+
+    printf("scanning\n");
+    int n = recursive_scan(""); // start at root
+    printf("Scan found %d entries.\n\n", n);
+
+    make_dir("/presets");
+
+    color_t writebuf[] = {GL_BLACK, GL_WHITE, GL_RED, GL_ORANGE};
+    unsigned int bytes = sizeof writebuf;
+    color_t readbuf[bytes];
+    write_preset(writebuf, bytes, "/presets/curiously_long_filename.rgba");
+    read_preset(readbuf, bytes, "/presets/curiously_long_filename.rgba");
+    n = recursive_scan("/"); // start at root
+    remove_preset("/presets/curiously_long_filename.rgba");
+    n = recursive_scan("/"); // start at root
+}
+
 
 void main(void) {
   system_enable_cache();
