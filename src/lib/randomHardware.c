@@ -1,4 +1,4 @@
-/* 
+/*
  * File taken directly from $CS107E/extras/hw_rng
  */
 

@@ -23,27 +23,28 @@
  * The main menu contains all the implemented cellular automata.
  * Preset_fn_t is NULL since all menu items lead to a new menu screen
  * for respective cellular automata.
+ *
+ * Options don't matter, since each just lead into a sub-menu
  * */
-const preset_t main_presets[] = { // options don't matter for this one
-    {"Game of Life",
-     (preset_fn_t)NULL,
-     {.width = 1024,
-      .height = 1024,
-      .delay_ms = 0,
-      .run_time = 1000000 * 100,
-      .use_time_limit = true,
-      .preset_file = "",
-      .save_preset = false}},
+const preset_t main_presets[] = {{"Game of Life",
+                                  (preset_fn_t)NULL,
+                                  {.width = 1024,
+                                   .height = 1024,
+                                   .delay_ms = 0,
+                                   .run_time = 1000000 * 100,
+                                   .use_time_limit = true,
+                                   .preset_file = "",
+                                   .save_preset = false}},
 
-    {"WireWorld",
-     (preset_fn_t)NULL,
-     {.width = 1024,
-      .height = 1024,
-      .delay_ms = 0,
-      .run_time = 1000000 * 100,
-      .use_time_limit = true,
-      .preset_file = "",
-      .save_preset = false}}};
+                                 {"WireWorld",
+                                  (preset_fn_t)NULL,
+                                  {.width = 1024,
+                                   .height = 1024,
+                                   .delay_ms = 0,
+                                   .run_time = 1000000 * 100,
+                                   .use_time_limit = true,
+                                   .preset_file = "",
+                                   .save_preset = false}}};
 
 // Presets for the game of life
 const preset_t life_presets[] = {{"Simple Oscillation",
@@ -55,16 +56,6 @@ const preset_t life_presets[] = {{"Simple Oscillation",
                                    .use_time_limit = true,
                                    .preset_file = "",
                                    .save_preset = false}},
-
-                                 // {"Preset 2",
-                                 //  (preset_fn_t)create_life_preset2,
-                                 //  {.width = 400,
-                                 //   .height = 400,
-                                 //   .delay_ms = 300,
-                                 //   .run_time = 1000000 * 100,
-                                 //   .use_time_limit = true,
-                                 //   .preset_file = "",
-                                 //   .save_preset = false}},
 
                                  {"Random Start",
                                   (preset_fn_t)create_random_life_preset,

@@ -1,9 +1,9 @@
-/* 
+/*
  * Avi Udash
  * 03/15/2022
  * Code for CS107E Final Project
- * 
- * This module implements the etch-a-sketch functionality for the cellular 
+ *
+ * This module implements the etch-a-sketch functionality for the cellular
  * automata preset interface.
  */
 
@@ -15,15 +15,25 @@
 #include "strings.h"
 #include "uart.h"
 
+/*
+ * All the color_buttons used in this project.
+ *
+ * format: {button_pin, button_color, led_pin}
+ */
 const color_buttons_t color_buttons[] = {
     {GPIO_PIN20, GL_WHITE, GPIO_PIN12}, // white button
     {GPIO_PIN16, GL_BLACK, GPIO_PIN0},  // black button
     {GPIO_PIN26, GL_RED, GPIO_PIN6},    // red button
     {GPIO_PIN19, GL_BLUE, GPIO_PIN5}};  // blue button
 
+// calc number of color buttons
 const unsigned num_color_buttons =
     sizeof(color_buttons) / sizeof(color_buttons_t);
 
+/*
+ * Helper function that checks if the given 'color' is in the 'color_states'
+ * array
+ */
 static bool color_in_states(color_t color, color_t color_states[],
                             size_t num_colors) {
   for (int i = 0; i < num_colors; i++) {
@@ -35,22 +45,41 @@ static bool color_in_states(color_t color, color_t color_states[],
   return false;
 }
 
+/*
+ * Function: mcp3008_read
+ * --------------------------
+ *  @param color_t color_states[]: array of all possible color states in the CA
+ *  @param size_t num_colors: number of color_states in the above array
+ *  @param unsigned main_button: GPIO pin for the main button, so that the
+ * holding the button can interrupt the etch-a-sketch and the CA runs
+ * --------------------------
+ *  The function reads data from the potentiometers and draws on the screen
+ * until the main button is held down
+ */
 void etch_a_sketch(color_t color_states[], size_t num_colors,
                    unsigned main_button) {
-  // default color is the first non-background color
+  // store commonly accessed data in consts
+  const unsigned gl_width = gl_get_width();
+  const unsigned gl_height = gl_get_height();
+
+  // default start color is the first non-background color
   color_t curr_color = color_states[1];
 
-  // exponential smoothing
+  // exponential smoothing to get smoother read from potentiometers
   int alpha = 30;
-  int x = (mcp3008_read(CH0) * gl_get_width()) / 1023;
-  int y = (mcp3008_read(CH1) * gl_get_width()) / 1023;
+  int x = (mcp3008_read(CH0) * gl_width) / 1023;
+  int y = (mcp3008_read(CH1) * gl_height) / 1023;
 
   // drawing loop
   while (true) {
     // get x and y values from potentiometers
-    int new_x = (mcp3008_read(CH0) * gl_get_width()) / 1023;
-    int new_y = (mcp3008_read(CH1) * gl_get_height()) / 1023;
+    int new_x = (mcp3008_read(CH0) * gl_width) / 1023;
+    int new_y = (mcp3008_read(CH1) * gl_height) / 1023;
 
+    /*
+     * exponential smoothing algorithm
+     * src: https://en.wikipedia.org/wiki/Exponential_smoothing
+     */
     x += (alpha * (new_x - x)) / 100;
     y += (alpha * (new_y - y)) / 100;
 
