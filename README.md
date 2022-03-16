@@ -1,16 +1,4 @@
 # sarahlc888-aviously25-project
-## Demo plan
-- Can show the speedup allowed by GPU by showing CPU version first?
-- Show Life
-    - One with some cool patterns/oscillators
-    - Random
-    - Fancy one that Avi will make/find (with logic !)
-    - Custom (etch-a-sketch)
-- Show WireWorld
-    - Fancy one that Avi will make/find
-    - Custom
-- Could do Langton's loop
-    - Might not have time but Avi can do it if he has time
 
 ## Project Title
 ## Team members
