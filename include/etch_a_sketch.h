@@ -1,6 +1,12 @@
 #ifndef ETCH_A_SKETCH_H
 #define ETCH_A_SKETCH_H
 
+/*
+ * Module to support etch-a-sketch functionality.
+ * 
+ * Avi Udash
+ */
+
 #include "../include/gl.h"
 #include "../include/button.h"
 

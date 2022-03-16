@@ -1,3 +1,8 @@
+/* 
+ * File taken directly from $CS107E/src in order to support caching for
+ * CPU CA simulations.
+ */
+
 #include "../../include/system.h"
 
 unsigned

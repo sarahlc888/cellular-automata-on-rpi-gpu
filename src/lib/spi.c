@@ -1,3 +1,8 @@
+/* 
+ * Avi Udash
+ * 03/08/2022
+ * Code for CS107E Final Project
+ */
 #include "spi.h"
 #include "gpio.h"
 

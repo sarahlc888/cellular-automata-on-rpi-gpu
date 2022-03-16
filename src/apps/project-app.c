@@ -1,5 +1,11 @@
+/* Avi Udash
+ * 03/14/2022
+ * Code for CS107E Final Project
+ *
+ * Main functionality of the app.
+ */
 #include "../../include/button.h"
-#include "../../include/ca.h"
+#include "../../include/ca_gpu.h"
 #include "../../include/etch_a_sketch.h"
 #include "../../include/mcp3008.h"
 #include "../../include/menu.h"
@@ -17,6 +23,8 @@
 #define MAIN_BUTTON 21
 
 void main() {
+  unsigned int verbosity_level = 0;
+
   uart_init();
   timer_init();
   gpio_init();
@@ -73,7 +81,7 @@ void main() {
                                   options.save_preset);
       }
 
-      ca_run(options.use_time_limit, options.run_time, MAIN_BUTTON);
+      ca_run(options.use_time_limit, options.run_time, MAIN_BUTTON, verbosity_level);
 
     } else if (choice == WIREWORLD) {
       // display wireworld menu and get choice and options
@@ -100,7 +108,7 @@ void main() {
       }
 
       // run the ca
-      ca_run(options.use_time_limit, options.run_time, MAIN_BUTTON);
+      ca_run(options.use_time_limit, options.run_time, MAIN_BUTTON, verbosity_level);
     }
   }
 

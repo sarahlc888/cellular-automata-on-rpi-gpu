@@ -1,6 +1,10 @@
 #ifndef RANDOMHARDWARE_H
 #define RANDOMHARDWARE_H
 
+/* 
+ * File taken directly from $CS107E/extras/hw_rng
+ */
+
 /*
  *
  * Same random hardware generator I used for assignment 2.

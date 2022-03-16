@@ -39,7 +39,7 @@ void main(void) {
   // ca_create_and_load_preset(preset_file, (preset_fn_t)
   // create_random_life_preset, save_preset);
   profile_on();
-  ca_run(use_time_limit, run_time);
+  ca_run(use_time_limit, run_time, 21, 1);
 
   // wire world
   // color_t color_states[4] = {GL_WHITE, GL_YELLOW, GL_RED, GL_BLACK};

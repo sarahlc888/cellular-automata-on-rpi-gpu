@@ -1,10 +1,8 @@
-# Note: do not use r4 (read only)
-# Note: Ra39 is no op, which explains why to use brr ra39, label 
-
+# coordinates within the cellular automata grid to begin with
 .const start_row, 0
 .const start_col, 0 
 
-# constants
+# define register variables
 .define cur_row, ra0
 .define cur_col, ra1 
 .define num_rows, rb0

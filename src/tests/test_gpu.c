@@ -1,8 +1,8 @@
-/* Code taken directly from past CS107E project ahconkey-JoshFrancisCodes-project 
- * (originally from their file `project-app.c`)
- *
- * Slightly modified to run without depending on project-module module, and to use an
- * alternate random number module.
+/* Sarah Chen and Avi Udash
+ * 03/14/2022
+ * Code for CS107E Final Project
+ * 
+ * This module tests TODO
  */
 
 #include "assert.h"
@@ -19,18 +19,6 @@
 
 #define PHYS_TO_BUS(x) ((x)|0xC0000000)
 #define SIZE(x) sizeof(x)/sizeof(x[0])
-
-
-// function from https://github.com/cs107e/ahconkey-JoshFrancisCodes-project to support pi_approx.c example
-void *generate_points(size_t N, size_t w) {
-    random_init();
-    timer_delay(2);
-    unsigned *pts = malloc(2*N);
-    for (size_t i = 0; i < 2*N; i++) {
-        pts[i] = random_getNumber(0, 200000) % w;
-    }
-    return pts;
-}
 
 // use uniforms for input, initially 
 void run_vectorsum(void)

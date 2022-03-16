@@ -17,7 +17,7 @@
 #define MENU_H
 
 #include "gl.h"
-#include "../include/ca.h"
+#include "../include/ca_gpu.h"
 #include "strings.h"
 #include "uart.h"
 

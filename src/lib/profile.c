@@ -1,12 +1,13 @@
 /* 
  * Sarah Chen
- * Adapted from code for CS107E Assignment 5: Keyboard and Simple Shell
+ * 03/10/2022
+ * Code for CS107E Final Project
  * 
- * This program implements a profiler, which measures where a program spends most 
- * of its time by repeatedly interrupting the program to sample the pc at regular intervals.
+ * This code is adapted from the extension for CS107E Assignment 7.
+ * 
+ * This module implements a profiler that measures where a program spends most 
+ * of its time. It interrupts the program to sample the pc at regular intervals.
  */
-
-// TODO: update this to only contain profile
 
 #include "../../include/profile.h"
 #include "uart.h"
@@ -69,7 +70,7 @@ static int *instr_index_to_addr(unsigned int ind)
  * global array of counters `profiler_ct`, which has one entry for each instruction 
  * in the text section.
  */
-void handle_profiler_sample(unsigned int pc, void *aux_data)
+static void handle_profiler_sample(unsigned int pc, void *aux_data)
 {
     // prevent endless retriggering
     armtimer_check_and_clear_interrupt();
@@ -133,7 +134,7 @@ static int find_insertion_pos(int *arr, int arr_size, int elem)
  * 
  * It returns the number of instructions placed into `top_instr`.
  */
-int find_highest_counts(int *top_instr, int *vals, int n)
+static int find_highest_counts(int *top_instr, int *vals, int n)
 {
     // number of entries in `top_instr` filled so far
     int top_size = 0;
@@ -226,9 +227,16 @@ static void print_top_instr(int *top_instr_ind, int *vals, int top_size, int n)
     }
 }
 
+/*
+ * Function: profile_on
+ * --------------------------
+ * Turn the profiler on and begin counting the instructions that the `pc` is on 
+ * during armtimer interrupts. 
+ * 
+ * Do nothing if profiler is already on.
+ */
 int profile_on(void)
 {
-    // do nothing if profiler is already on
     if (profiler_status == 1) { 
         return 0;
     }
@@ -252,9 +260,17 @@ int profile_on(void)
     return 0;
 }
 
+/*
+ * Function: profile_off
+ * --------------------------
+ * Turn the profiler off (disable armtimer) and print a summary of the 
+ * instructions with the highest counts (i.e. that dominated the program's 
+ * run time).
+ * 
+ * Do nothing if profiler is already off.
+ */
 int profile_off(void)
 {
-    // do nothing if profiler is already off
     if (profiler_status == 0) {
         return 0;
     }
@@ -274,6 +290,13 @@ int profile_off(void)
     return 0;
 }
 
+/*
+ * Function: profile_init
+ * --------------------------
+ * Run necessary initialization steps. Run this function before any others in the module.
+ * The function initializes the arm timer and enables interrupts to allow the profiler
+ * to function.
+ */
 void profile_init(void)
 {
     armtimer_init(PROFILE_INTERVAL); // initialize timer for profiler

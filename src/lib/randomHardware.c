@@ -1,6 +1,8 @@
-#include "../../include/randomHardware.h"
+/* 
+ * File taken directly from $CS107E/extras/hw_rng
+ */
 
-// TODO randomHardware.c: does not seem to return scaled value.
+#include "../../include/randomHardware.h"
 
 //------------------------------ Constants ------------------------
 

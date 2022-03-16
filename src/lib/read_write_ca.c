@@ -99,6 +99,13 @@ void remove_preset(const char *fname)
     printf("Removed file %s.\n",fname);
 }
 
+void write_compressed_preset(color_t writebuf[], color_t *colors, unsigned int buf_bytes, const char *fname)
+{
+    // write the colors array
+    // then write the values using 4 bits each (up to 16 states)
+    // TODO: SHL
+}
+
 // TODO: make read and write less verbose in terms of printing
 // write the given preset array to the file name
 void write_preset(color_t writebuf[], unsigned int buf_bytes, const char *fname)

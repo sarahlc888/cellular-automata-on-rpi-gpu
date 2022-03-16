@@ -2,38 +2,30 @@
  * 03/08/2022
  * Code for CS107E Final Project
  *
- * This module supports representation and simulation of cellular automata.
+ * This module handles representation and simulation of cellular automata.
  *
- * Currently supported automata:
- * - The Game of Life
- * - WireWorld
+ * Supported automata:
+ * - The Game of Life (default on GPU, CPU is also supported)
+ * - WireWorld (on CPU)
  *
- * Currently, the state is directly stored within the frame buffers. The frame
- * buffer is double-buffered, so the code considers one buffer at a time to edit
- * the other. States are therefore implicitly represented as colors, and an
- * arbitrary number of states are supported because they depend on a
- * client-specified color array.
+ * The grid state is stored directly in the frame buffers, and states are 
+ * implicitly represented as colors. (Since the display is double-buffered, 
+ * one buffer is the previous state that governs the update for the next 
+ * buffer/state.)
  *
- * Another approach would require having 2 further arrays to represent states,
- * which are then copied into the framebuffer. So far, this has not seemed to be
- * necessary.
- *
- * Possible additions to the module, if time allows:
- * - Correct behavior at borders -- need to make this bigger than the space ? to
- * simulate infinity? (currently, behavior is WRONG when hitting the borders
- * because there is no bounds catching)
- * - Add further CA
- *      - Support rule tables (http://www.mirekw.com/ca/rullex_rtab.html)
- *        (https://github.com/GollyGang/ruletablerepository/blob/gh-pages/src/read_ruletable.cpp)
- *      - Add Langston's Loop or another loop CA
- *      - Possibly support more granular neighbor information (which neighbors
- * are on), if necessary
+ * The Game of Life is intended for an infinite grid, but this module handles
+ * the borders of the grid using a toroidal approach (for the CPU) or by 
+ * maintaining a 1-unit wide border of dead cells (for the GPU).
+ * 
+ * A number of functions in this library such as `count_neighbors_von_neumann()` 
+ * and `cpu_life_update_state()` and features like the mode title vs. styled title 
+ * are not explicitly used (leading to compilation warnings), but we keep them 
+ * here for extensibility reasons.
  */
 
 #include "../../include/ca_gpu.h"
 #include "../../include/button.h"
 #include "../../include/draw_ca.h"
-#include "../../include/mailbox_functions.h"
 #include "../../include/qpu.h"
 #include "../../include/read_write_ca.h"
 #include "assert.h"
@@ -45,9 +37,9 @@
 
 #define SIZE(x) sizeof(x) / sizeof(x[0])
 
-// struct to store information about the current cellular automata simulation
+// struct for information about the current cellular automata simulation
 typedef struct {
-  unsigned int mode; // which cellular automata to run
+  unsigned int mode;            // which cellular automata to run
 
   unsigned int height;          // height of the physical screen
   unsigned int width;           // width of the physical screen
@@ -56,57 +48,63 @@ typedef struct {
   unsigned int padded_width;    // width of the physical screen plus padding
   color_t *state_colors;        // colors for various states
 
-  unsigned int update_ms; // ms between state updates
+  unsigned int update_ms;       // ms between state updates
 
-  // pointers to the framebuffer
-  unsigned int *cur_state;
-  unsigned int *next_state;
+  unsigned int *cur_state;      // current framebuffer
+  unsigned int *next_state;     // next framebuffer
 
 } ca_config_t;
 
-static volatile ca_config_t
-    ca; // TODO: is volatile necessary? will something else change the code?
+static ca_config_t ca;
+const unsigned int border_width = 1; // pixel width of border for zero-padding
 
 // CA mode table links titles, styled titles, and update functions
-// TODO: why do I need these titles?
-static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c,
-                                            void *state);
-static unsigned int wireworld_update_pix(unsigned int r, unsigned int c,
-                                         void *state);
-
-static void gpu_gol_update_state(void *prev, void *next);
+static void gpu_life_update_state(void *prev, void *next);
 static void cpu_ww_update_state(void *prev, void *next);
-
+static void cpu_life_update_state(void *prev, void *next);
 static const ca_option_t ca_modes[] = {
-    {"life", "Conway", gpu_gol_update_state},
+    {"life", "Conway", gpu_life_update_state},
     {"wireworld", "WireWorld!", cpu_ww_update_state},
 };
 
 /*
  * Function: ca_init
  * --------------------------
- * Initialize a cellular automaton simulation with mode `ca_mode_t`.
- * Specify the screen dimensions `screen_width` and `screen_height`.
- * Specify the `colors` used in the automaton.
- * The first color passed in `colors` is presumed to be the background color.
- * Specify the `update_delay` in milliseconds.
+ * Initialize a cellular automaton simulation with mode `ca_mode_t` to specify
+ * which automaton to use and whether or not to use a custom start state.
+ * 
+ * The grid will be of dimensions `screen_width` by `screen_height`. (Note 
+ * that the requested framebuffer will be wider by 2 pixels in each direction
+ * due to padding.)
+ * 
+ * IMPORTANT: `screen_width` must be a multiple of 16 to support the sliding
+ * window vectorization approach for game of life.
+ * 
+ * The CA will use `colors`, a client-specified color array. The first color is 
+ * the background color, and the remaining colors play roles specified by the
+ * CA. (For Life, colors[1] = alive state. For WireWorld, colors[1] = electron 
+ * head, colors[2] = tail, colors[3] = wire.) 
+ * 
+ * The `update_delay` in milliseconds controls the delay between screen refreshes. 
+ * Set it as 0 if no delay is desired.
  */
 void ca_init(ca_mode_t ca_mode, unsigned int screen_width,
              unsigned int screen_height, color_t *colors,
              unsigned int update_delay) {
+  // require that screen width is a multiple of 16
+  assert(screen_width % 16 == 0);
 
-  unsigned int border_width = 1;
   // initialize GL for non-custom modes
   gl_init(screen_width + 2 * border_width, screen_height + 2 * border_width,
           GL_DOUBLEBUFFER); // initialize frame buffer
 
-  // init all pixels to background color (in both buffers)
+  // initialize all pixels to background color (in both buffers)
   gl_clear(colors[0]);
   gl_swap_buffer();
   gl_clear(colors[0]);
   gl_swap_buffer();
 
-  // init global struct
+  // initialize global struct
   ca.mode = ca_mode;
   ca.state_colors = colors;
   ca.bordered_height = screen_height + 2 * border_width;
@@ -116,7 +114,7 @@ void ca_init(ca_mode_t ca_mode, unsigned int screen_width,
   ca.padded_width = fb_get_pitch() / fb_get_depth();
   ca.update_ms = update_delay;
 
-  // init file system
+  // initialize file system
   ca_ffs_init();
 }
 
@@ -124,32 +122,24 @@ void ca_init(ca_mode_t ca_mode, unsigned int screen_width,
  * Function: save_state
  * --------------------------
  * Save the given `state` of the framebuffer to the file `fname`. Strip
- * padding before writing.
+ * padding before writing, but include the border
  *
- * Note: ca_ffs_init() must be called before hand. TODO: add a check? move this
- * to read_write_ca?
+ * Note: `ca_ffs_init()` must be called before this function, and that should
+ * be done in `ca_init()`
  */
 void save_state(const char *fname, void *state) {
-
-  // int n = recursive_scan(""); // start at root
-  // printf("Scan found %d entries.\n\n", n);
-
-  // TODO: choose unsigned int or color_t and be consistent
-  // TODO: remove these failed options
-  // color_t writebuf[] = (color_t *) ca.cur_state;
-  // color_t *writebuf = (color_t *) ca.cur_state;
-
   // remove padding from buffer before writing
   unsigned int(*state_2d)[ca.padded_width] = state;
-  unsigned int bytes = 4 * ca.width * ca.height;
-  void *writebuf = malloc(bytes); // TODO: use the heap because of dynamic size?
-                                  // TODO: best practice w void *?
-  color_t(*writebuf_2d)[ca.width] = writebuf;
-  for (int i = 0; i < ca.height; i++) {
-    for (int j = 0; j < ca.width; j++) {
+  unsigned int bytes = 4 * ca.bordered_width * ca.bordered_height;
+  void *writebuf = malloc(bytes); 
+  color_t(*writebuf_2d)[ca.bordered_width] = writebuf;
+  for (int i = 0; i < ca.bordered_height; i++) {
+    for (int j = 0; j < ca.bordered_width; j++) {
       writebuf_2d[i][j] = state_2d[i][j];
     }
   }
+
+  // output the data
   write_preset(writebuf, bytes, fname);
   free(writebuf);
 }
@@ -160,22 +150,19 @@ void save_state(const char *fname, void *state) {
  * Read the preset from the file `fname` into the given `state` of the
  * framebuffer. Write using the appropriate padding for the framebuffer.
  *
- * Note: ca_ffs_init() must be called before hand. TODO: add a check? move this
- * to read_write_ca?
+ * Note: `ca_ffs_init()` must be called before this function, and that should
+ * be done in `ca_init()`
  */
 void load_preset(const char *fname, void *state) {
-  // int n = recursive_scan(""); // start at root
-  // printf("Scan found %d entries.\n\n", n);
-
-  unsigned int bytes = 4 * ca.width * ca.height;
+  unsigned int bytes = 4 * ca.bordered_width * ca.bordered_height;
   color_t readbuf[bytes];
   read_preset(readbuf, bytes, fname);
 
   // copy into the next frame buffer, then swap and update
-  color_t(*readbuf_2d)[ca.width] = &readbuf; // TODO: is this right?
+  color_t(*readbuf_2d)[ca.bordered_width] = &readbuf; 
   unsigned int(*state_2d)[ca.padded_width] = state;
-  for (int c = 0; c < ca.height; c++) {
-    for (int r = 0; r < ca.width; r++) {
+  for (int c = 0; c < ca.bordered_height; c++) {
+    for (int r = 0; r < ca.bordered_width; r++) {
       state_2d[r][c] = readbuf_2d[r][c];
     }
   }
@@ -185,8 +172,7 @@ void load_preset(const char *fname, void *state) {
  * Function: count_neighbors_moore
  * --------------------------
  * This function returns the number of directly-adjacent or diagonal neighbors
- * of cell
- * (`r`, `c`) that have state (aka color) `state_to_count` in `state`.
+ * of cell (`r`, `c`) that have state (aka color) `state_to_count` in `state`.
  */
 static unsigned int count_neighbors_moore(unsigned int r, unsigned int c,
                                           unsigned int state_to_count,
@@ -237,41 +223,12 @@ static unsigned int count_neighbors_von_neumann(unsigned int r, unsigned int c,
 }
 
 /*
- * DEPRECATED !!! Use cpu_ww_update_state instead
- * Function: wireworld_update_pix
- * --------------------------
- * Handle pixel update for (`r`, `c`) in `state` for WireWorld.
- *
- * Reference: https://mathworld.wolfram.com/WireWorld.html
- *
- * TODO: move to its own module? move to draw_ca module?
- */
-static unsigned int wireworld_update_pix(unsigned int r, unsigned int c,
-                                         void *state) {
-  unsigned int(*state_2d)[ca.padded_width] = state;
-  unsigned int cell_state = state_2d[r][c];
-
-  if (cell_state == ca.state_colors[1]) {
-    // electron head always turns into an electron tail
-    return ca.state_colors[2];
-  } else if (cell_state == ca.state_colors[2]) {
-    // electron tail always turns into wire
-    return ca.state_colors[3];
-  } else if (cell_state == ca.state_colors[3]) {
-    // wire remains wire unless u is 1 or 2 (becomes an electron head)
-    unsigned int live_neighbors =
-        count_neighbors_moore(r, c, ca.state_colors[1], state);
-    if (live_neighbors == 1 || live_neighbors == 2) {
-      return ca.state_colors[1];
-    }
-  }
-  return cell_state;
-}
-
-/*
  * Function: cpu_ww_update_state
  * --------------------------
  * Takes in a prev state and a new state and updates each pixel individually
+ * Handle CPU pixel update for (`r`, `c`) in `state` for WireWorld.
+ *
+ * Rules found at: https://mathworld.wolfram.com/WireWorld.html
  */
 static void cpu_ww_update_state(void *prev, void *next) {
   unsigned int(*next_state_2d)[ca.padded_width] = next;
@@ -306,42 +263,45 @@ static void cpu_ww_update_state(void *prev, void *next) {
 }
 
 /*
- * Function: game_of_life_update_pix
+ * Function: cpu_life_update_state
  * --------------------------
- * This function updates the state of the cell at coordinate (`r`, `c`).
- * By observing `state`, it considers its current state and the state of its
- * neighbors. It returns the new state of the cell.
+ * This function updates the state of the cell at coordinate (`r`, `c`) using 
+ * the CPU. By observing `state`, it considers its current state and the state 
+ * of its neighbors. It returns the new state of the cell.
  *
  * `ca.state_colors[1]` and `ca.state_colors[0]` respectively specify the colors
  * of live and dead cells.
- *
- * TODO: move to its own module? move to draw_ca module?
  */
-static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c,
-                                            void *state) {
-  unsigned int(*state_2d)[ca.padded_width] = state;
-  unsigned int cell_state = state_2d[r][c];
+static void cpu_life_update_state(void *prev, void *next) {
+  unsigned int(*next_state_2d)[ca.padded_width] = next;
+  unsigned int(*prev_state_2d)[ca.padded_width] = (void *)prev;
 
-  unsigned int live_neighbors =
-      count_neighbors_moore(r, c, ca.state_colors[1], state);
+  // update each pixel
+  for (int c = 0; c < ca.height; c++) {
+    for (int r = 0; r < ca.width; r++) {
+      unsigned int cell_state = prev_state_2d[r][c];
 
-  if (cell_state == ca.state_colors[1]) {
-    if (live_neighbors == 2 || live_neighbors == 3) {
-      // printf("row %d, col %d, neighs %d\n", r, c, live_neighbors);
-      return ca.state_colors[1]; // live cell w/ 2 or 3 live neighbours survives
-    } else {
-      return ca.state_colors[0]; // otherwise, it dies
+      unsigned int live_neighbors =
+          count_neighbors_moore(r, c, ca.state_colors[1], prev);
+
+      // assert that the cell is one of the expected colors
+      assert(cell_state == ca.state_colors[0] || cell_state == ca.state_colors[1]);
+
+      if (cell_state == ca.state_colors[1]) {
+        if (live_neighbors == 2 || live_neighbors == 3) {
+          next_state_2d[r][c] = ca.state_colors[1]; // live cell w/ 2 or 3 live neighbours survives
+        } else {
+          next_state_2d[r][c] = ca.state_colors[0]; // otherwise, it dies
+        }
+      } else if (cell_state == ca.state_colors[0]) {
+        if (live_neighbors == 3) {
+          next_state_2d[r][c] = ca.state_colors[1]; // dead cell w/ 3 live neighbours becomes a
+                                    // live cell
+        } else {
+          next_state_2d[r][c] = ca.state_colors[0]; // otherwise, it remains dead
+        }
+      } 
     }
-  } else if (cell_state == ca.state_colors[0]) {
-    if (live_neighbors == 3) {
-      // printf("row %d, col %d, neighs %d\n", r, c, live_neighbors);
-      return ca.state_colors[1]; // dead cell w/ 3 live neighbours becomes a
-                                 // live cell
-    } else {
-      return ca.state_colors[0]; // otherwise, it remains dead
-    }
-  } else {
-    return cell_state; // TODO: catch exception
   }
 }
 
@@ -355,51 +315,73 @@ static void update_state(void *prev, void *next) {
   ca_modes[ca.mode].fn(prev, next);
 }
 
-static void gpu_gol_update_state(void *prev, void *next) {
+/*
+ * Function: gpu_life_update_state
+ * --------------------------
+ * This function updates the state of the Game of Life by one step using
+ * the GPU. The update logic for each refresh is fully encoded in the
+ * included program, `src/qasm/life_driver.c`.
+ * 
+ * The program runs a sliding window of size 16 over the current fb grid and
+ * (1) Computes neighbor vectors for the 8 neighbors of cells in the sliding window
+ * (2) Determines the number of alive neighbors for each cell via vector addition
+ * (3) Writes the new state of the cell to the next fb pointer
+ * 
+ * To do so, the GPU must read and write from the main memory, which is 
+ * managed using direct memory access (DMA) between the main memory and 
+ * the GPU's Vertex Pipe Memory (VPM). It then reads the stored vectors 
+ * into GPU registers, does computation, and then writes the results back
+ * into the framebuffer.
+ */
+static void gpu_life_update_state(void *prev, void *next) {
   unsigned int *cur_state = prev;
-  unsigned int *next_state = (unsigned int *)next;
+  unsigned int *next_state = (unsigned int *) next;
 
-  unsigned int number_of_uniforms = 7;
   unsigned program[] = {
-#include "../tests/life_driver.c"
+    #include "../qasm/life_driver.c"
   };
 
   qpu_init();
 
-  // Uniforms
-  // 1. Number of rows
-  // 2. Number of columns (must be multiple of 16)
-  // 3. Frame buffer's padded_width
-  // 4. Off color
-  // 5. On color
-  // 6. Prev state -- Current FB pointer (to read to)
-  // 7. Next state -- Next FB pointer (to write to)
+  assert(ca.width % 16 == 0); // Require grid width to support sliding window of 16 cells
   unsigned uniforms[] = {
-      (unsigned)ca.height,          (unsigned)ca.width,
-      (unsigned)ca.padded_width,    (unsigned)ca.state_colors[0],
-      (unsigned)ca.state_colors[1], (unsigned)cur_state,
-      (unsigned)next_state};
-  // printf("gpu updating state for sliding window\n");
-  qpu_run(program, SIZE(program), uniforms, number_of_uniforms);
-  // printf("--\n");
-  while (qpu_request_count() != qpu_complete_count()) {
-  }
+      (unsigned) ca.height,           // number of rows in CA grid (not including border)
+      (unsigned) ca.width,            // number of columns in CA grid (not including border)
+      (unsigned) ca.padded_width,     // frame buffer's padded_width
+      (unsigned) ca.state_colors[0],  // off cell color
+      (unsigned) ca.state_colors[1],  // on cell color
+      (unsigned) cur_state,           // previous state (the current fb pointer, to read from)
+      (unsigned) next_state};         // next state (next fb pointer, to write to)
+
+  // send the program to the GPU and wait for completion
+  qpu_run(program, SIZE(program), uniforms, SIZE(uniforms)); 
+  while (qpu_request_count() != qpu_complete_count()) {}
+
   assert(qpu_request_count() == qpu_complete_count());
   assert(qpu_complete_count() == 1);
+
 }
 
+/*
+ * Function: gpu_gol_update_state_cdriver
+ * --------------------------
+ * This function updates the state of the Game of Life by one step using
+ * the GPU. The update logic for each refresh requires a C driver to control
+ * the sliding window, and the GPU is re-initialized for every sliding window. 
+ * It is kept here for archival purposes and to enable a speed comparison.
+ * 
+ * It is slower than CPU updates.
+ */
 static void gpu_gol_update_state_cdriver(unsigned int *prev, void *next) {
   unsigned int *cur_state = prev;
   unsigned int *next_state = (unsigned int *)next;
 
-  unsigned int number_of_uniforms = 7;
   unsigned program[] = {
-#include "../tests/fb_life.c"
+    #include "../qasm/fb_life.c"
   };
 
   for (int r = 0; r < ca.height; r++) {
     for (int c = 0; c < ca.width; c += 16) {
-      // printf("(%d, %d)\n", r, c);
       qpu_init();
 
       unsigned uniforms[] = {
@@ -412,9 +394,7 @@ static void gpu_gol_update_state_cdriver(unsigned int *prev, void *next) {
           (unsigned)(cur_state + ca.padded_width * (r + 2) + (c)),
           // get update address
           (unsigned)(next_state + ca.padded_width * (r + 1) + (c + 1))};
-      // printf("gpu updating state for sliding window\n");
-      qpu_run(program, SIZE(program), uniforms, number_of_uniforms);
-      // printf("--\n");
+      qpu_run(program, SIZE(program), uniforms, SIZE(uniforms));
       assert(qpu_request_count() == qpu_complete_count());
       assert(qpu_complete_count() == 1);
     }
@@ -452,33 +432,35 @@ void ca_create_and_load_preset(const char *fname, preset_fn_t make_preset,
  * It should also be preceded by a function that loads a preset.
  */
 void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
-            unsigned main_button) {
-  // printf("RUNNING!");
+            unsigned main_button, unsigned verbose) {
   // display the initial state
   ca.cur_state = fb_get_draw_buffer();
   gl_swap_buffer();
 
   unsigned int start = timer_get_ticks();
+  unsigned int prev_ticks = timer_get_ticks();
   unsigned int total_updates = 0;
+  unsigned int total_ticks = 0;
   while ((!use_time_limit) || (timer_get_ticks() < ticks_to_run + start)) {
     timer_delay_ms(ca.update_ms);
 
     // retrieve buffer for the next state
     ca.next_state = fb_get_draw_buffer();
 
-    // gpu_gol_update_state(ca.cur_state, ca.next_state);
-    // printf("ticks per update: %d\n", timer_get_ticks() - prev_ticks);
     update_state(ca.cur_state, ca.next_state);
+    if (verbose) {
+      printf("ticks per update: %d\n", timer_get_ticks() - prev_ticks);
+    }
 
-    // // show the buffer for ca.next_state
+    // show the buffer for ca.next_state
     gl_swap_buffer();
+
     // make ca.next_state the ca.cur_state
     ca.cur_state = ca.next_state;
 
+    total_ticks += (timer_get_ticks() - prev_ticks); // TODO: catch overflow?
+    prev_ticks = timer_get_ticks();
     total_updates++;
-
-    // printf("loop status: %d, %d, %d\n", use_time_limit, timer_get_ticks(),
-    // ticks_to_run + start);
 
     // end ca if main button was held down
     if (check_button_dequeue(main_button) == BUTTON_HOLD) {
@@ -486,5 +468,7 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
     }
   }
 
-  printf("total updates: %d\n", total_updates);
+  if (verbose) {
+    printf("total updates: %d\n", total_updates);
+  }
 }

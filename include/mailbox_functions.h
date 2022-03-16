@@ -1,4 +1,12 @@
 /*
+This file was taken directly from 
+https://github.com/cs107e/ahconkey-JoshFrancisCodes-project/tree/master/src/lib
+which adapted it from a Broadcom source.
+
+See below for their references.
+*/
+
+/*
 Copyright (c) 2012, Broadcom Europe Ltd.
 All rights reserved.
 

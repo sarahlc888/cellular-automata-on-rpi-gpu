@@ -1,4 +1,11 @@
-/* Code taken directly from past CS107E project ahconkey-JoshFrancisCodes-project */
+/* 
+ * Code taken directly from past CS107E project ahconkey-JoshFrancisCodes-project
+ * with an extremely minor modification to correct a syntax error.
+ * (In `qpu_init()`, `reset_status()` was called instead of `qpu_reset_status()`.)
+ * 
+ * It implements functions to initialize the QPU, allocate/free memory for the QPU,
+ * run a program on the QPU, and modify/read QPU status.
+ */
 
 #include "strings.h"
 #include "../../include/qpu.h"
@@ -10,7 +17,7 @@
 int qpu_init(void) {
     unsigned ret = qpu_enable(0, 1);
     set_clock_rate(CLOCK_RATE);
-    qpu_reset_status(); // changed from reset_status()
+    qpu_reset_status(); 
     
     return ret;
 }
@@ -29,19 +36,15 @@ int qpu_run(unsigned *code, unsigned code_length, unsigned *uniforms, unsigned u
     unsigned code_ptr = qpu_malloc(code_length + uniforms_count);
 
     memcpy((unsigned *)code_ptr, code, code_length * sizeof(unsigned));
-    // printf("copied\n");
     unsigned uniform_ptr = code_ptr + code_length * sizeof(unsigned);
     memcpy((unsigned *)uniform_ptr, uniforms, uniforms_count * sizeof(unsigned));
-    // printf("copied\n");
 
     // These lines send the program by writing to GPU registers (see qpu.h)
     *((unsigned *) UNIFORMS) = uniform_ptr;
     *((unsigned *) ULENGTH) = uniforms_count;
     *((unsigned *) PROGRAM) = code_ptr;
-    // printf("poked\n");
 
     qpu_free(code_ptr);
-    // printf("freed\n");
 
     return 0;
 }

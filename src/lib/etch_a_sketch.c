@@ -1,3 +1,12 @@
+/* 
+ * Avi Udash
+ * 03/15/2022
+ * Code for CS107E Final Project
+ * 
+ * This module implements the etch-a-sketch functionality for the cellular 
+ * automata preset interface.
+ */
+
 #include "../../include/etch_a_sketch.h"
 #include "../../include/button.h"
 #include "../../include/mcp3008.h"

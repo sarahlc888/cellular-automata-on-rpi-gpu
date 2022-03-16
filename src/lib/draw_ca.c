@@ -3,14 +3,10 @@
  * Code for CS107E Final Project
  *
  * This module includes functions to draw various objects within a cellular
- * automata state. For Life, this includes oscillators. [TODO: expand.] For
- * WireWorld, this includes logic gates. [TODO: expand.]
+ * automata state. For Life, this includes oscillators, fixed patterns, 
+ * gliders, and more. For WireWorld, this includes logic gates.
  *
- * TODO: if CA types expand, could separate this by CA type
- * TODO: for gates/shapes, could do bitmap instead of direct map, but there is
- * not much point
  * TODO: catch case where you attempt to draw outside of fb
- * TODO: improve module design to avoid repeated function parameters etc
  */
 
 #include "../../include/draw_ca.h"
@@ -20,19 +16,18 @@
 #include "strings.h"
 #include "timer.h"
 
+// Wireworld gate types
 gate_t or_gate = {.width = 3,
                   .height = 5,
                   .in_row_1 = 1,
                   .in_row_2 = 3,
                   .out_row = 2,
                   .gate_data = {
-                      // clang-format off
                       1, 1, 0, 
                       0, 0, 1, 
                       0, 1, 1, 
                       0, 0, 1, 
                       1, 1, 0
-                      // clang-format on
                   }};
 
 gate_t xor_gate = {.width = 6,
@@ -41,7 +36,6 @@ gate_t xor_gate = {.width = 6,
                    .in_row_2 = 4,
                    .out_row = 3,
                    .gate_data = {
-                       // clang-format off
                         0, 1, 1, 0, 0, 0,
                         1, 0, 0, 1, 0, 0,
                         0, 0, 1, 1, 1, 1, 
@@ -49,7 +43,6 @@ gate_t xor_gate = {.width = 6,
                         0, 0, 1, 1, 1, 1, 
                         1, 0, 0, 1, 0, 0, 
                         0, 1, 1, 0, 0, 0
-                       // clang-format on
                    }};
 
 gate_t and_gate = {.width = 15,
@@ -58,7 +51,6 @@ gate_t and_gate = {.width = 15,
                    .in_row_2 = 3,
                    .out_row = 4,
                    .gate_data = {
-                       // clang-format off
                         1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 
                         0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0,
@@ -67,8 +59,9 @@ gate_t and_gate = {.width = 15,
                         1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0,
                         1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 
                         0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-                       // clang-format on
                    }};
+
+static gate_t *gate_types[] = {&or_gate, &and_gate, &xor_gate};
 
 // Game of life patterns
 // still life
@@ -76,32 +69,26 @@ pattern_t block = {.width = 2, .height = 2, .data = {1, 1, 1, 1}};
 // oscillators
 pattern_t blinker_1 = {.width = 3, .height = 1, .data = {1, 1, 1}};
 pattern_t blinker_2 = {.width = 1, .height = 3, .data = {1, 1, 1}};
-pattern_t toad_1 = { // TODO: toad 2
+pattern_t toad_1 = { 
     .width = 4,
     .height = 2,
     .data = {
-        // clang-format off
         0, 1, 1, 1, 
         1, 1, 1, 0
-        // clang-format on
     }};
-pattern_t beacon_1 = { // TODO: beacon_1
+pattern_t beacon_1 = { 
     .width = 4,
     .height = 4,
     .data = {
-        // clang-format off
         1, 1, 0, 0, 
         1, 0, 0, 0, 
         0, 0, 0, 1, 
         0, 0, 1, 1
-        // clang-format on
     }};
-
-pattern_t pulsar_1 = { // TODO: pulsar_2, 3
+pattern_t pulsar_1 = { 
     .width = 13,
     .height = 13,
     .data = {
-        // clang-format off
         0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
         1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 
@@ -115,19 +102,17 @@ pattern_t pulsar_1 = { // TODO: pulsar_2, 3
         1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
         0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0,
-        // clang-format on
     }};
 // spaceships
 pattern_t glider_1 = {.width = 3,
                       .height = 3,
                       .data = {
-                          // clang-format off
                           0, 0, 1, 
                           1, 0, 1,
                           0, 1, 1,
-                          // clang-format on
                       }};
 
+// RLE patterns
 rle_pattern_t bunnies = {
     .width = 6, .height = 6, .data = "bo4b$2obo2b$4b2o$o2bo2b$o5b$o!"};
 
@@ -139,6 +124,7 @@ rle_pattern_t karel_177_osc = {
             "3bo38bo$3bo38bo9$3bo38bo$3bo38bo$o3bo36bo3bo$2b2o38b2o$2b2o38b2o4$"
             "b2o40b2o$b2o40b2o$2bo40bo4$16bo12bo$14b2ob2o8b2ob2o$"
             "8b3o3b2o14b2o3b3o$9b2o24b2o$16bo12bo!"};
+
 rle_pattern_t flying_wing = {
     .width = 159,
     .height = 90,
@@ -258,8 +244,16 @@ rle_pattern_t ww_nh_multiplication = {
         "CA3.A29.C3.A..C$9.C..7C.C59.BCC.BCCABCCABCCABCCABCCABCCABCCAB5.BC$9."
         "C.C6.3C$9.C.C7.C$9.C.C8.12C$10.C"};
 
-static gate_t *gate_types[] = {&or_gate, &and_gate, &xor_gate};
+// Functions to draw patterns for various automata
 
+/*
+ * Function: ww_draw_vert_line
+ * --------------------------
+ * This function draws a vertical line starting at the given (`r`, `c`) with
+ * the given `length`. Drawn lines are in the color `wire_color`.
+ *
+ * It alters `state` in place, accessing data using the given `fb_padded_width`.
+ */
 static void ww_draw_vert_line(unsigned int r, unsigned int c,
                               unsigned int length, void *state,
                               unsigned int fb_padded_width,
@@ -277,7 +271,7 @@ static void ww_draw_vert_line(unsigned int r, unsigned int c,
  * `c` and in rows `r1` and `r2`. It proceeds for `length` columns in the
  * positive direction. Drawn lines are in the color `wire_color`.
  *
- * It alters `state` in place, accessing data using the given `width`.
+ * It alters `state` in place, accessing data using the given `fb_padded_width`.
  *
  * This does not call `ww_draw_output_line` so that it can execute two
  * instructions within the same loop, which is faster.
@@ -317,7 +311,7 @@ static void ww_draw_output_line(unsigned int c, unsigned int r,
  * --------------------------
  * This function draws the specific gate `gate_ind`, with the top left corner at
  * row `r` and column `c`. The input and output tails have the specified length,
- * `gate_tail_length`.
+ * `in_tail_length` and `out_tail_length`.
  *
  * Supported gates are AND, OR, and XOR.
  *
@@ -330,11 +324,11 @@ static void ww_draw_gate(gate_ind_t gate_ind, int r, int c,
                          unsigned int out_tail_length, unsigned int input1,
                          unsigned int input2, void *state,
                          unsigned int fb_padded_width, color_t *colors) {
-  gate_t *gate_type = gate_types[gate_ind]; // TODO: why pointers
+  gate_t *gate_type = gate_types[gate_ind];
 
   unsigned int(*state_2d)[fb_padded_width] = state;
   unsigned int(*gate_2d)[gate_type->width] =
-      (void *)gate_type->gate_data; // TODO: make this work without void *
+      (void *)gate_type->gate_data;
 
   // make input
   ww_draw_input_lines(c, r + gate_type->in_row_1, r + gate_type->in_row_2,
@@ -368,7 +362,16 @@ static void ww_draw_gate(gate_ind_t gate_ind, int r, int c,
   }
 }
 
-// TODO: consolidate w the output lines one
+/*
+ * Function: ww_draw_row_wire
+ * --------------------------
+ * This function draws a horizontal line starting at the given (`r`, `c`) with
+ * the given `length`. Drawn lines are in the color `wire_color`.
+ *
+ * It alters `state` in place, accessing data using the given `fb_padded_width`.
+ * 
+ * It draws an electron at the left end of the wire.
+ */
 static void ww_draw_row_wire(int r, int c, int wire_length, void *state,
                              unsigned int fb_padded_width, color_t *colors) {
   unsigned int(*state_2d)[fb_padded_width] = state;
@@ -379,15 +382,17 @@ static void ww_draw_row_wire(int r, int c, int wire_length, void *state,
   state_2d[r][c] = colors[2];     // tail
 }
 
-// draw specified pattern in GOL
+/*
+ * Function: life_draw_pattern
+ * --------------------------
+ * This function draws the specified `pattern` for the game of life at 
+ * the given (`r`, `c`) using the given `colors`.
+ * 
+ * It alters `state` in place, accessing data using the given `fb_padded_width`.
+ */
 static void life_draw_pattern(pattern_t *pattern, int r, int c, void *state,
                               unsigned int fb_padded_width, color_t *colors) {
-  // TODO: why does this only work when using a pointer to pattern
-
   unsigned int(*state_2d)[fb_padded_width] = state;
-  // TODO: remove void * ? error: initialization of 'unsigned int
-  // (*)[(sizetype)(pattern->width)]' from incompatible pointer type 'unsigned
-  // int *'
   unsigned int(*pattern_2d)[pattern->width] = (void *)pattern->data;
   for (int i = 0; i < pattern->height; i++) {
     for (int j = 0; j < pattern->width; j++) {
@@ -398,7 +403,10 @@ static void life_draw_pattern(pattern_t *pattern, int r, int c, void *state,
   }
 }
 
-/* Draw specified pattern in RLE format
+/* 
+ * Function: draw_rle_pattern
+ * --------------------------
+ * Draw specified cellular automata pattern in RLE format.
  *
  * RLE Format is a long string with following format:
  * <run_count><tag>
@@ -460,23 +468,6 @@ static void draw_rle_pattern(rle_pattern_t *pattern, int r, int c, void *state,
 }
 
 /*
- * Function: life_draw_osc
- * --------------------------
- * This function draws a Life oscillator at the given row `r` and column `c`.
- *
- * It alters `state` in place, accessing data using the given `fb_padded_width`.
- */
-static void life_draw_osc(int r, int c, void *state,
-                          unsigned int fb_padded_width, color_t *colors) {
-
-  unsigned int(*state_2d)[fb_padded_width] = state;
-
-  state_2d[r][c - 1] = colors[1];
-  state_2d[r][c] = colors[1];
-  state_2d[r][c + 1] = colors[1];
-}
-
-/*
  * Function: create_random_life_preset
  * --------------------------
  * This function populates `state` with a random preset state for Life.
@@ -512,7 +503,7 @@ void create_life_preset(unsigned int width, unsigned int height,
                         color_t *colors) {
   for (int i = 5; i < width - 5; i += 5) {
     for (int j = 5; j < height - 5; j += 5) {
-      life_draw_osc(i, j, state, padded_width, colors);
+      life_draw_pattern(&blinker_1, i, j, state, padded_width, colors);
     }
   }
 }
@@ -550,12 +541,24 @@ void create_life_preset2(unsigned int width, unsigned int height,
   life_draw_pattern(&glider_1, cur_row, cur_col, state, padded_width, colors);
 }
 
+/*
+ * Function: create_life_bunnies
+ * --------------------------
+ * This function populates `state` with propagating bunnies for the Game
+ * of Life.
+ */
 void create_life_bunnies(unsigned int width, unsigned int height,
                          unsigned int padded_width, void *state,
                          color_t *colors) {
   draw_rle_pattern(&bunnies, 60, 60, state, padded_width, colors);
 }
 
+/*
+ * Function: create_life_karel_177
+ * --------------------------
+ * This function populates `state` with mandala-style graphics for the Game
+ * of Life.
+ */
 void create_life_karel_177(unsigned int width, unsigned int height,
                            unsigned int padded_width, void *state,
                            color_t *colors) {
@@ -568,6 +571,11 @@ void create_life_karel_177(unsigned int width, unsigned int height,
   }
 }
 
+/*
+ * Function: create_life_flying_wing
+ * --------------------------
+ * This function populates `state` with two wings for the Game of Life.
+ */
 void create_life_flying_wing(unsigned int width, unsigned int height,
                              unsigned int padded_width, void *state,
                              color_t *colors) {
@@ -595,12 +603,22 @@ void create_ww_preset(unsigned int width, unsigned int height,
   ww_draw_gate(WW_AND, 6, 12, 2, 1, 0, 0, state, padded_width, colors);
 }
 
+/*
+ * Function: create_ww_AND_gates
+ * --------------------------
+ * This function draws AND gates with various input states.
+ */
 void create_ww_AND_gates(unsigned int width, unsigned int height,
                          unsigned int padded_width, void *state,
                          color_t *colors) {
   draw_rle_pattern(&ww_AND_gate_pattern, 2, 2, state, padded_width, colors);
 }
 
+/*
+ * Function: create_ww_nh_multiplication
+ * --------------------------
+ * Pattern taken from https://github.com/jimblandy/golly/blob/master/src/Patterns/WireWorld/NylesHeise.mcl
+ */
 void create_ww_nh_multiplication(unsigned int width, unsigned int height,
                                  unsigned int padded_width, void *state,
                                  color_t *colors) {

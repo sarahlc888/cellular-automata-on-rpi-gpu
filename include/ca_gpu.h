@@ -32,6 +32,6 @@ void ca_init(ca_mode_t ca_mode,
 
 void ca_create_and_load_preset(const char* fname, preset_fn_t make_preset, unsigned int save_to_sd);
 
-void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run, unsigned main_button);
+void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run, unsigned main_button, unsigned int verbose);
 
 #endif

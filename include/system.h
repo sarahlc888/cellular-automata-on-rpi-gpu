@@ -1,3 +1,8 @@
+/* 
+ * File taken directly from $CS107E/include in order to support caching for
+ * CPU CA simulations.
+ */
+
 #ifndef SYSTEM_H
 #define SYSTEM_H
 

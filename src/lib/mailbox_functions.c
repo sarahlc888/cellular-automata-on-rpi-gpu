@@ -1,4 +1,21 @@
 /*
+ * This file was taken directly from 
+ * https://github.com/cs107e/ahconkey-JoshFrancisCodes-project/tree/master/src/lib,
+ * which adapted it from a Broadcom source. See below for their references.
+ * 
+ * Only cosmetic changes were required to adapt it to the CA project, apart
+ * from a small but costly bug where `p` in `mem_alloc()` was not 16-byte 
+ * aligned. Since `mailbox.h` requires this alignment, the bug led to 
+ * inconsistent performance when `p` did not happen to be 16-byte aligned
+ * (and the desired values therefore were not written to the mailbox).
+ * Before resolving this bug, the Pi could correctly run single GPU programs
+ * but had to be fully rebooted between sending GPU programs.
+ * 
+ * Note that instances of `mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);`
+ * replaced calls of `mbox_property(file_desc, p);` in the original Broadcom code.
+ */
+
+/*
 Copyright (c) 2012, Broadcom Europe Ltd.
 All rights reserved.
 
@@ -25,8 +42,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "../../include/mailbox.h" 
-#include "printf.h"
+#include "mailbox.h" 
 #include "strings.h"
 #include "assert.h"
 
@@ -50,9 +66,7 @@ unsigned mem_alloc(int file_desc, unsigned size, unsigned align, unsigned flags)
 
    p[i++] = 0x00000000; // end tag
    p[0] = i*sizeof *p; // actual size
-    
-  // mbox_property(file_desc, p); 
-   
+       
    mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p); //our code
    return p[5];
 }
@@ -72,7 +86,6 @@ unsigned mem_free(int file_desc, unsigned handle)
    p[i++] = 0x00000000; // end tag
    p[0] = i*sizeof *p; // actual size
 
-   //mbox_property(file_desc, p);
    mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
    return p[5];
 }
@@ -92,9 +105,7 @@ unsigned mem_lock(int file_desc, unsigned handle)
    p[i++] = 0x00000000; // end tag
    p[0] = i*sizeof *p; // actual size
    
-   bool ret = mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
-   // printf("memlock p[5] %x, ret = %d\n", p[5], ret);
-//   mbox_property(file_desc, p);
+   mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
    return p[5];
 }
 
@@ -114,7 +125,6 @@ unsigned mem_unlock(int file_desc, unsigned handle)
    p[0] = i*sizeof *p; // actual size
 
    mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
-//   mbox_property(file_desc, p);
    return p[5];
 }
 #define PHYS_TO_BUS(x) ((x)|0xC0000000)
@@ -140,7 +150,6 @@ unsigned execute_code(int file_desc, unsigned code, unsigned r0, unsigned r1, un
    p[0] = i*sizeof *p; // actual size
 
    mailbox_request(MAILBOX_TAGS_ARM_TO_VC, PHYS_TO_BUS((unsigned) p));
-//   mbox_property(file_desc, p);
    return p[5];
 }
 
@@ -161,7 +170,6 @@ unsigned qpu_enable(int file_desc, unsigned enable)
    p[0] = i*sizeof *p; // actual size
 
    mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
-//   mbox_property(file_desc, p);
    return p[5];
 }
 
@@ -183,7 +191,6 @@ unsigned execute_qpu(int file_desc, unsigned num_qpus, unsigned control, unsigne
    p[0] = i*sizeof *p; // actual size
 
    mailbox_request(MAILBOX_TAGS_ARM_TO_VC, (unsigned) p);
-//   mbox_property(file_desc, p);
    return p[5];
 }
 
