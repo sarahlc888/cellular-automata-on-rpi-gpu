@@ -31,29 +31,30 @@
  */
 
 #include "../../include/ca_gpu.h"
+#include "../../include/button.h"
 #include "../../include/draw_ca.h"
+#include "../../include/mailbox_functions.h"
+#include "../../include/qpu.h"
 #include "../../include/read_write_ca.h"
+#include "assert.h"
 #include "fb.h"
 #include "gl.h"
 #include "malloc.h"
 #include "printf.h"
 #include "timer.h"
-#include "assert.h"
-#include "../../include/mailbox_functions.h"
-#include "../../include/qpu.h"
 
-#define SIZE(x) sizeof(x)/sizeof(x[0])
+#define SIZE(x) sizeof(x) / sizeof(x[0])
 
 // struct to store information about the current cellular automata simulation
 typedef struct {
   unsigned int mode; // which cellular automata to run
 
-  unsigned int height;       // height of the physical screen
-  unsigned int width;        // width of the physical screen
-  unsigned int bordered_height;       // height of the physical screen
-  unsigned int bordered_width;        // width of the physical screen
-  unsigned int padded_width; // width of the physical screen plus padding
-  color_t *state_colors;     // colors for various states
+  unsigned int height;          // height of the physical screen
+  unsigned int width;           // width of the physical screen
+  unsigned int bordered_height; // height of the physical screen
+  unsigned int bordered_width;  // width of the physical screen
+  unsigned int padded_width;    // width of the physical screen plus padding
+  color_t *state_colors;        // colors for various states
 
   unsigned int update_ms; // ms between state updates
 
@@ -72,9 +73,13 @@ static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c,
                                             void *state);
 static unsigned int wireworld_update_pix(unsigned int r, unsigned int c,
                                          void *state);
+
+static void gpu_gol_update_state(void *prev, void *next);
+static void cpu_ww_update_state(void *prev, void *next);
+
 static const ca_option_t ca_modes[] = {
-    {"life", "Conway", game_of_life_update_pix},
-    {"wireworld", "WireWorld!", wireworld_update_pix},
+    {"life", "Conway", gpu_gol_update_state},
+    {"wireworld", "WireWorld!", cpu_ww_update_state},
 };
 
 /*
@@ -92,16 +97,14 @@ void ca_init(ca_mode_t ca_mode, unsigned int screen_width,
 
   unsigned int border_width = 1;
   // initialize GL for non-custom modes
-  if (ca_mode != CUSTOM_LIFE && ca_mode != CUSTOM_WIREWORLD) {
-    gl_init(screen_width + 2 * border_width, screen_height + 2 * border_width,
-            GL_DOUBLEBUFFER); // initialize frame buffer
+  gl_init(screen_width + 2 * border_width, screen_height + 2 * border_width,
+          GL_DOUBLEBUFFER); // initialize frame buffer
 
-    // init all pixels to background color (in both buffers)
-    gl_clear(colors[0]);
-    gl_swap_buffer();
-    gl_clear(colors[0]);
-    gl_swap_buffer();
-  }
+  // init all pixels to background color (in both buffers)
+  gl_clear(colors[0]);
+  gl_swap_buffer();
+  gl_clear(colors[0]);
+  gl_swap_buffer();
 
   // init global struct
   ca.mode = ca_mode;
@@ -234,6 +237,7 @@ static unsigned int count_neighbors_von_neumann(unsigned int r, unsigned int c,
 }
 
 /*
+ * DEPRECATED !!! Use cpu_ww_update_state instead
  * Function: wireworld_update_pix
  * --------------------------
  * Handle pixel update for (`r`, `c`) in `state` for WireWorld.
@@ -262,6 +266,43 @@ static unsigned int wireworld_update_pix(unsigned int r, unsigned int c,
     }
   }
   return cell_state;
+}
+
+/*
+ * Function: cpu_ww_update_state
+ * --------------------------
+ * Takes in a prev state and a new state and updates each pixel individually
+ */
+static void cpu_ww_update_state(void *prev, void *next) {
+  unsigned int(*next_state_2d)[ca.padded_width] = next;
+  unsigned int(*prev_state_2d)[ca.padded_width] = (void *)prev;
+
+  // update each pixel
+  for (int c = 0; c < ca.height; c++) {
+    for (int r = 0; r < ca.width; r++) {
+
+      unsigned int cell_state = prev_state_2d[r][c];
+      unsigned int new_state = cell_state;
+
+      if (cell_state == ca.state_colors[1]) {
+        // electron head always turns into an electron tail
+        new_state = ca.state_colors[2];
+      } else if (cell_state == ca.state_colors[2]) {
+        // electron tail always turns into wire
+        new_state = ca.state_colors[3];
+      } else if (cell_state == ca.state_colors[3]) {
+        // wire remains wire unless u is 1 or 2 (becomes an electron head)
+        unsigned int live_neighbors =
+            count_neighbors_moore(r, c, ca.state_colors[1], prev);
+        if (live_neighbors == 1 || live_neighbors == 2) {
+          new_state = ca.state_colors[1];
+        }
+      }
+
+      // write pixel in next
+      next_state_2d[r][c] = new_state;
+    }
+  }
 }
 
 /*
@@ -310,91 +351,74 @@ static unsigned int game_of_life_update_pix(unsigned int r, unsigned int c,
  * This function updates the state of the cellular automata by one step using
  * the appropriate update function (specified by ca.mode).
  */
-static void update_state(unsigned int *prev, void *next) {
-  unsigned int(*state_2d)[ca.padded_width] = next;
-
-  // update each pixel
-  for (int c = 0; c < ca.height; c++) {
-    for (int r = 0; r < ca.width; r++) {
-
-      // read state from prev
-      // TODO: move this outside the loop?
-      unsigned int new_state = ca_modes[ca.mode].fn(r, c, prev);
-      // write pixel in next
-      state_2d[r][c] = new_state;
-    }
-  }
+static void update_state(void *prev, void *next) {
+  ca_modes[ca.mode].fn(prev, next);
 }
 
-static void gpu_gol_update_state(unsigned int *prev, void *next) {
-    unsigned int *cur_state = prev;
-    unsigned int *next_state = (unsigned int *) next;
+static void gpu_gol_update_state(void *prev, void *next) {
+  unsigned int *cur_state = prev;
+  unsigned int *next_state = (unsigned int *)next;
 
-    unsigned int number_of_uniforms = 7; 
-    unsigned program[] = {
-        #include "../tests/life_driver.c"   
-    };
+  unsigned int number_of_uniforms = 7;
+  unsigned program[] = {
+#include "../tests/life_driver.c"
+  };
 
-    qpu_init();
+  qpu_init();
 
-    // Uniforms
-    // 1. Number of rows
-    // 2. Number of columns (must be multiple of 16)
-    // 3. Frame buffer's padded_width
-    // 4. Off color
-    // 5. On color 
-    // 6. Prev state -- Current FB pointer (to read to)
-    // 7. Next state -- Next FB pointer (to write to)
-    unsigned uniforms[] = {
-      (unsigned) ca.height,
-      (unsigned) ca.width,
-      (unsigned) ca.padded_width,
-      (unsigned) ca.state_colors[0],
-      (unsigned) ca.state_colors[1],
-      (unsigned) cur_state,
-      (unsigned) next_state 
-    };
-    // printf("gpu updating state for sliding window\n");
-    qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
-    // printf("--\n");
-    while (qpu_request_count() != qpu_complete_count()) {}
-    assert(qpu_request_count() == qpu_complete_count());
-    assert(qpu_complete_count() == 1);
-
+  // Uniforms
+  // 1. Number of rows
+  // 2. Number of columns (must be multiple of 16)
+  // 3. Frame buffer's padded_width
+  // 4. Off color
+  // 5. On color
+  // 6. Prev state -- Current FB pointer (to read to)
+  // 7. Next state -- Next FB pointer (to write to)
+  unsigned uniforms[] = {
+      (unsigned)ca.height,          (unsigned)ca.width,
+      (unsigned)ca.padded_width,    (unsigned)ca.state_colors[0],
+      (unsigned)ca.state_colors[1], (unsigned)cur_state,
+      (unsigned)next_state};
+  // printf("gpu updating state for sliding window\n");
+  qpu_run(program, SIZE(program), uniforms, number_of_uniforms);
+  // printf("--\n");
+  while (qpu_request_count() != qpu_complete_count()) {
+  }
+  assert(qpu_request_count() == qpu_complete_count());
+  assert(qpu_complete_count() == 1);
 }
 
 static void gpu_gol_update_state_cdriver(unsigned int *prev, void *next) {
-    unsigned int *cur_state = prev;
-    unsigned int *next_state = (unsigned int *) next;
+  unsigned int *cur_state = prev;
+  unsigned int *next_state = (unsigned int *)next;
 
-    unsigned int number_of_uniforms = 7; 
-    unsigned program[] = {
-        #include "../tests/fb_life.c"   
-    };
+  unsigned int number_of_uniforms = 7;
+  unsigned program[] = {
+#include "../tests/fb_life.c"
+  };
 
-    
-    for (int r = 0; r < ca.height; r++) {
-      for (int c = 0; c < ca.width; c+=16) {
-        // printf("(%d, %d)\n", r, c);
-        qpu_init();
+  for (int r = 0; r < ca.height; r++) {
+    for (int c = 0; c < ca.width; c += 16) {
+      // printf("(%d, %d)\n", r, c);
+      qpu_init();
 
-        unsigned uniforms[] = {
-            // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left neighbors
-            (unsigned) ca.state_colors[0], (unsigned) ca.state_colors[1],
-            (unsigned) (cur_state + ca.padded_width * (r + 1) + (c + 1)), 
-            (unsigned) (cur_state + ca.padded_width * (r) + (c)), 
-            (unsigned) (cur_state + ca.padded_width * (r + 1) + (c)), 
-            (unsigned) (cur_state + ca.padded_width * (r + 2) + (c)), 
-            // get update address
-            (unsigned) (next_state + ca.padded_width * (r + 1) + (c + 1)) 
-        };
-        // printf("gpu updating state for sliding window\n");
-        qpu_run(program, SIZE(program), uniforms, number_of_uniforms); 
-        // printf("--\n");
-        assert(qpu_request_count() == qpu_complete_count());
-        assert(qpu_complete_count() == 1);
-      }
+      unsigned uniforms[] = {
+          // get pointers to a cell at (1, 1) aka unpadded (0, 0) and its 3 left
+          // neighbors
+          (unsigned)ca.state_colors[0], (unsigned)ca.state_colors[1],
+          (unsigned)(cur_state + ca.padded_width * (r + 1) + (c + 1)),
+          (unsigned)(cur_state + ca.padded_width * (r) + (c)),
+          (unsigned)(cur_state + ca.padded_width * (r + 1) + (c)),
+          (unsigned)(cur_state + ca.padded_width * (r + 2) + (c)),
+          // get update address
+          (unsigned)(next_state + ca.padded_width * (r + 1) + (c + 1))};
+      // printf("gpu updating state for sliding window\n");
+      qpu_run(program, SIZE(program), uniforms, number_of_uniforms);
+      // printf("--\n");
+      assert(qpu_request_count() == qpu_complete_count());
+      assert(qpu_complete_count() == 1);
     }
+  }
 }
 
 /*
@@ -427,34 +451,39 @@ void ca_create_and_load_preset(const char *fname, preset_fn_t make_preset,
  *
  * It should also be preceded by a function that loads a preset.
  */
-void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run) {
+void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
+            unsigned main_button) {
   // printf("RUNNING!");
   // display the initial state
   ca.cur_state = fb_get_draw_buffer();
   gl_swap_buffer();
 
   unsigned int start = timer_get_ticks();
-  // unsigned int prev_ticks = timer_get_ticks();
   unsigned int total_updates = 0;
   while ((!use_time_limit) || (timer_get_ticks() < ticks_to_run + start)) {
     timer_delay_ms(ca.update_ms);
 
     // retrieve buffer for the next state
     ca.next_state = fb_get_draw_buffer();
-    
-    gpu_gol_update_state(ca.cur_state,
-                  ca.next_state);
+
+    // gpu_gol_update_state(ca.cur_state, ca.next_state);
     // printf("ticks per update: %d\n", timer_get_ticks() - prev_ticks);
+    update_state(ca.cur_state, ca.next_state);
 
     // // show the buffer for ca.next_state
     gl_swap_buffer();
     // make ca.next_state the ca.cur_state
     ca.cur_state = ca.next_state;
 
-    // prev_ticks = timer_get_ticks();
     total_updates++;
 
-    // printf("loop status: %d, %d, %d\n", use_time_limit, timer_get_ticks(), ticks_to_run + start);
+    // printf("loop status: %d, %d, %d\n", use_time_limit, timer_get_ticks(),
+    // ticks_to_run + start);
+
+    // end ca if main button was held down
+    if (check_button_dequeue(main_button) == BUTTON_HOLD) {
+      break;
+    }
   }
 
   printf("total updates: %d\n", total_updates);

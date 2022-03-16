@@ -19,6 +19,22 @@
 #include "gl.h"
 #include "../include/ca.h"
 #include "strings.h"
+#include "uart.h"
+
+/*
+ * 'preset_options_t' stores the ca_options for each preset
+ */
+typedef struct {
+  unsigned width;
+  unsigned height;
+
+  unsigned delay_ms; // delay during each state update
+  unsigned run_time; // total run time
+  bool use_time_limit; // whether to use time limit or not
+
+  const char* preset_file;
+  bool save_preset;
+} preset_option_t;
 
 /*
  * 'preset_t' is a struct that stores a single preset/menu option, with a name 
@@ -27,7 +43,9 @@
 typedef struct {
   const char *name; // name of preset
   preset_fn_t fn;   // preset function to run in ca
+  preset_option_t options; // ca options for preset
 } preset_t;
+
 
 // the presets are defined in the menu.c files
 extern const preset_t main_presets[];

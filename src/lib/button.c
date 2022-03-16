@@ -4,15 +4,10 @@
  *
  * This module supports initializing button interrupts and getting button events
  *
- * TODO:
  * The module also supports handling interrupts for multiple buttons in one
  * program. It stores an array of rb_t's, one for each gpio pin. When a button
  * is initialized, it creates a ringbuffer for that specific button, which can
  * later be enqueued to or dequeued from.
- * TODO:
- * Currently, the modules supports handling interrupts for one button at a time.
- * The module uses a ring buffer to keep track of button presses, which can then
- * be deqeued at a later time.
  */
 #include "../../include/button.h"
 #include "gpio.h"
@@ -33,10 +28,6 @@ static rb_t *rb_arr[GPIO_PIN_LAST];
  * button gpio pin. It checks how long the button is held for and enqeues
  * either a button hold or a button press depending on the length of the press.
  *
- * TODO:
- * The 'aux_data' field expects a pointer to a ringbuffer (basically rb_t) for
- * the pin in which the falling edge was detected.
- *
  * The 'aux_data' field expects a pointer to an unsigned int representing the
  * gpio pin number for the button that was detected
  */
@@ -56,10 +47,8 @@ static void handle_button(unsigned pc, void *aux_data) {
   if (stop - start > 10000) {     // deal with debouncing
     if (stop - start > 1000000) { // hold time is 1s
       rb_enqueue(rb_arr[button_pin], BUTTON_HOLD);
-      uart_putchar('1');
     } else {
       rb_enqueue(rb_arr[button_pin], BUTTON_PRESS);
-      uart_putchar('0');
     }
   }
 }

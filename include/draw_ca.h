@@ -1,6 +1,5 @@
 #ifndef DRAWCA_H
 #define DRAWCA_H
-
 #include "gl.h"
 
 // specify gate
@@ -27,13 +26,27 @@ typedef struct {
     unsigned int data[];
 } pattern_t;
 
+// pattern for Life in RLE
+typedef struct {
+    unsigned int width;
+    unsigned int height;
+    const char* data;
+} rle_pattern_t;
+
 // type of function pointer used to create a preset
 typedef unsigned int (*preset_fn_t)(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 
 void create_life_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
-void create_ww_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 void create_life_preset2(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+void create_life_bunnies(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+void create_life_karel_177(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+void create_life_flying_wing(unsigned int width, unsigned int height, unsigned int padded_width, void* state, color_t *colors);
 void create_random_life_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+
+void create_ww_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+void create_ww_AND_gates(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+void create_ww_nh_multiplication(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+
 void create_custom_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 
 
