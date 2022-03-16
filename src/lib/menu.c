@@ -24,21 +24,138 @@
  * Preset_fn_t is NULL since all menu items lead to a new menu screen
  * for respective cellular automata.
  * */
-const preset_t main_presets[] = {{"Game of Life", (preset_fn_t)NULL},
-                                 {"WireWorld", (preset_fn_t)NULL}};
+const preset_t main_presets[] = { // options don't matter for this one
+    {"Game of Life",
+     (preset_fn_t)NULL,
+     {.width = 1024,
+      .height = 1024,
+      .delay_ms = 0,
+      .run_time = 1000000 * 100,
+      .use_time_limit = true,
+      .preset_file = "",
+      .save_preset = false}},
+
+    {"WireWorld",
+     (preset_fn_t)NULL,
+     {.width = 1024,
+      .height = 1024,
+      .delay_ms = 0,
+      .run_time = 1000000 * 100,
+      .use_time_limit = true,
+      .preset_file = "",
+      .save_preset = false}}};
 
 // Presets for the game of life
-const preset_t life_presets[] = {
-    {"Preset 1", (preset_fn_t)create_life_preset},
-    {"Preset 2", (preset_fn_t)create_life_preset2},
-    {"Custom", (preset_fn_t)create_custom_preset},
-};
+const preset_t life_presets[] = {{"Simple Oscillation",
+                                  (preset_fn_t)create_life_preset,
+                                  {.width = 256,
+                                   .height = 256,
+                                   .delay_ms = 300,
+                                   .run_time = 1000000 * 100,
+                                   .use_time_limit = true,
+                                   .preset_file = "",
+                                   .save_preset = false}},
+
+                                 // {"Preset 2",
+                                 //  (preset_fn_t)create_life_preset2,
+                                 //  {.width = 400,
+                                 //   .height = 400,
+                                 //   .delay_ms = 300,
+                                 //   .run_time = 1000000 * 100,
+                                 //   .use_time_limit = true,
+                                 //   .preset_file = "",
+                                 //   .save_preset = false}},
+
+                                 {"Random Start",
+                                  (preset_fn_t)create_random_life_preset,
+                                  {.width = 1024,
+                                   .height = 1024,
+                                   .delay_ms = 50,
+                                   .run_time = 1000000 * 100,
+                                   .use_time_limit = true,
+                                   .preset_file = "",
+                                   .save_preset = false}},
+
+                                 {"Bunnies",
+                                  (preset_fn_t)create_life_bunnies,
+                                  {.width = 128,
+                                   .height = 128,
+                                   .delay_ms = 0,
+                                   .run_time = 1000000 * 100,
+                                   .use_time_limit = false,
+                                   .preset_file = "",
+                                   .save_preset = false}},
+
+                                 {"Mandalas",
+                                  (preset_fn_t)create_life_karel_177,
+                                  {.width = 128,
+                                   .height = 128,
+                                   .delay_ms = 50,
+                                   .run_time = 1000000 * 100,
+                                   .use_time_limit = false,
+                                   .preset_file = "",
+                                   .save_preset = false}},
+
+                                 {"Flying Wing",
+                                  (preset_fn_t)create_life_flying_wing,
+                                  {.width = 512,
+                                   .height = 512,
+                                   .delay_ms = 0,
+                                   .run_time = 1000000 * 100,
+                                   .use_time_limit = false,
+                                   .preset_file = "",
+                                   .save_preset = false}},
+
+                                 {"Custom",
+                                  (preset_fn_t)create_custom_preset,
+                                  {.width = 128,
+                                   .height = 128,
+                                   .delay_ms = 300,
+                                   .run_time = 1000000 * 100,
+                                   .use_time_limit = true,
+                                   .preset_file = "",
+                                   .save_preset = false}}};
 
 // Presets for WireWorld
-const preset_t ww_presets[] = {
-    {"Preset 1", (preset_fn_t)create_ww_preset},
-    {"Custom", (preset_fn_t)create_custom_preset},
-};
+const preset_t ww_presets[] = {{"OR, XOR, AND",
+                                (preset_fn_t)create_ww_preset,
+                                {.width = 64,
+                                 .height = 64,
+                                 .delay_ms = 300,
+                                 .run_time = 1000000 * 100,
+                                 .use_time_limit = true,
+                                 .preset_file = "",
+                                 .save_preset = false}},
+
+                               {"AND Gates",
+                                (preset_fn_t)create_ww_AND_gates,
+                                {.width = 64,
+                                 .height = 64,
+                                 .delay_ms = 300,
+                                 .run_time = 1000000 * 100,
+                                 .use_time_limit = true,
+                                 .preset_file = "",
+                                 .save_preset = false}},
+
+                               {"Nyles Heise Multiplication",
+                                (preset_fn_t)create_ww_nh_multiplication,
+                                {.width = 208,
+                                 .height = 208,
+                                 .delay_ms = 0,
+                                 .run_time = 1000000 * 100,
+                                 .use_time_limit = true,
+                                 .preset_file = "",
+                                 .save_preset = false}},
+
+                               {"Custom",
+                                (preset_fn_t)create_custom_preset,
+                                {.width = 64,
+                                 .height = 64,
+                                 .delay_ms = 300,
+                                 .run_time = 1000000 * 100,
+                                 .use_time_limit = true,
+                                 .preset_file = "",
+                                 .save_preset = false}}};
 
 // calculate the number of presets for each of the menus
 const unsigned num_main_presets = sizeof(main_presets) / sizeof(preset_t);
@@ -82,23 +199,44 @@ unsigned display_menu(const char *title, const preset_t presets[],
   // store user choice
   unsigned choice = 0;
 
+  // colors
+  color_t BG_COLOR = gl_color(0x1d, 0x1e, 0x2c);
+  color_t SELECT_COLOR = gl_color(0xf7, 0x5c, 0x03);
+  color_t FG_COLOR = gl_color(0xff, 0xff, 0xff);
+  color_t SECOND_COLOR = gl_color(0x17, 0x68, 0xac);
+
   // main loop
   while (true) {
-    // black background
-    gl_clear(GL_BLACK);
+    // draw background
+    gl_clear(BG_COLOR);
+
+    // draw title box
+    gl_draw_rect(0, 0, gl_get_width(), 40 + gl_get_char_height(), SECOND_COLOR);
 
     // draw title
-    draw_text_centered(5, title, GL_WHITE);
+    draw_text_centered(20, title, FG_COLOR);
 
-    // draw all choices, BLUE for currently selected, WHITE otherwise
+    // variables to help draw
+    unsigned text_y =
+        gl_get_width() / 2 - num_presets * gl_get_char_height() / 2;
+
+    // draw all choices, SELECT_COLOR for currently selected, FG_COLOR otherwise
     for (int i = 0; i < num_presets; i++) {
+
       if (i == choice) {
-        draw_text_centered(gl_get_height() / 2 + i * gl_get_char_height(),
-                           presets[i].name, GL_BLUE); // selected choice
-      } else {
-        draw_text_centered(gl_get_height() / 2 + i * gl_get_char_height(),
-                           presets[i].name, GL_WHITE);
+        unsigned box_x1 =
+            gl_get_width() / 2 -
+            (gl_get_char_width() * (strlen(presets[i].name) + 2)) / 2;
+        unsigned box_y1 = text_y - 5;
+        unsigned box_w = gl_get_char_width() * (strlen(presets[i].name) + 2);
+        unsigned box_h = gl_get_char_height() + 10;
+
+        gl_draw_rect(box_x1, box_y1, box_w, box_h, SELECT_COLOR);
       }
+
+      draw_text_centered(text_y, presets[i].name, FG_COLOR); // selected choice
+
+      text_y += gl_get_char_height() + 15;
     }
     gl_swap_buffer();
 

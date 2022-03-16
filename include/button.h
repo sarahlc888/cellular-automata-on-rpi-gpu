@@ -4,15 +4,10 @@
  *
  * This module supports initializing button interrupts and getting button events
  *
- * TODO:
  * The module also supports handling interrupts for multiple buttons in one
  * program. It stores an array of rb_t's, one for each gpio pin. When a button
  * is initialized, it creates a ringbuffer for that specific button, which can
  * later be enqueued to or dequeued from.
- * TODO:
- * Currently, the modules supports handling interrupts for one button at a time.
- * The module uses a ring buffer to keep track of button presses, which can then
- * be deqeued at a later time.
  */
 #ifndef BUTTON_H
 #define BUTTON_H

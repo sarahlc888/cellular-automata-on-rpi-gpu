@@ -23,7 +23,6 @@ static bool color_in_states(color_t color, color_t color_states[],
     }
   }
 
-  printf("false");
   return false;
 }
 
@@ -32,23 +31,19 @@ void etch_a_sketch(color_t color_states[], size_t num_colors,
   // default color is the first non-background color
   color_t curr_color = color_states[1];
 
-  // TODO: different starting size?
-  // TODO: gl_init and clear on ca_init/ca_load_profile?
-  gl_init(100, 100, GL_DOUBLEBUFFER);
-
-  // init gl with background color
-  gl_clear(color_states[0]);
-  gl_swap_buffer();
-  gl_clear(color_states[0]);
-  gl_swap_buffer();
-
-  printf("clear gl\n");
+  // exponential smoothing
+  int alpha = 30;
+  int x = (mcp3008_read(CH0) * gl_get_width()) / 1023;
+  int y = (mcp3008_read(CH1) * gl_get_width()) / 1023;
 
   // drawing loop
   while (true) {
     // get x and y values from potentiometers
-    int x = (mcp3008_read(CH0) * gl_get_width()) / 900;
-    int y = (mcp3008_read(CH1) * gl_get_height()) / 900;
+    int new_x = (mcp3008_read(CH0) * gl_get_width()) / 1023;
+    int new_y = (mcp3008_read(CH1) * gl_get_height()) / 1023;
+
+    x += (alpha * (new_x - x)) / 100;
+    y += (alpha * (new_y - y)) / 100;
 
     // draw the pixel in both buffers
     gl_draw_pixel(x, y, curr_color);

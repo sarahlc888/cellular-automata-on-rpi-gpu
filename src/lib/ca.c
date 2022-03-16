@@ -352,7 +352,7 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
   gl_swap_buffer();
 
   unsigned int start = timer_get_ticks();
-  unsigned int prev_ticks = timer_get_ticks();
+  // unsigned int prev_ticks = timer_get_ticks();
   unsigned int total_updates = 0;
   while (!use_time_limit || timer_get_ticks() < ticks_to_run + start) {
     timer_delay_ms(ca.update_ms);
@@ -365,14 +365,14 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
     // ca.next_state);
     update_state(ca.cur_state,
                  ca.next_state); // TODO: this is what would be handled by GPU
-    printf("ticks per update: %d\n", timer_get_ticks() - prev_ticks);
+    // printf("ticks per update: %d\n", timer_get_ticks() - prev_ticks);
 
     // show the buffer for ca.next_state
     gl_swap_buffer();
     // make ca.next_state the ca.cur_state
     ca.cur_state = ca.next_state;
 
-    prev_ticks = timer_get_ticks();
+    // prev_ticks = timer_get_ticks();
     total_updates++;
 
     // end ca if main button was held down

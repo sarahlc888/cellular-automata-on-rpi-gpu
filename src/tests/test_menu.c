@@ -44,65 +44,63 @@ void main() {
     // start gl
     gl_init(512, 512, GL_DOUBLEBUFFER);
 
-    // menu
+    // main menu and cellular automata choice
     unsigned choice = display_menu("Choose Cellular Automata:", main_presets,
                                    num_main_presets, MAIN_BUTTON);
-
-    // variables for ca
-    unsigned save_preset = 0;
-    unsigned use_time_limit = 1;
-
-    unsigned int delay_ms = 300;
-    unsigned int run_time = 1000000 * 100;
-    const char *preset_file = "/presets/life_50x50_1.rgba";
 
     // Run the game corresponding to the choice
     if (choice == LIFE) {
 
-      // display life menu
+      // display life menu and get choice and options
       choice = display_menu("Choose Game of Life Preset:", life_presets,
                             num_life_presets, MAIN_BUTTON);
 
+      preset_option_t options = life_presets[choice].options;
+
       // init colors
-      color_t color_states[2] = {GL_BLACK, GL_WHITE};
-      gl_init(100, 100, GL_DOUBLEBUFFER);
+      color_t BG_COLOR = gl_color(0x1d, 0x1e, 0x2c);
+      color_t color_states[2] = {BG_COLOR, GL_WHITE};
 
       // game of life
-      ca_init(LIFE, gl_get_width(), gl_get_height(), color_states, delay_ms);
+      ca_init(LIFE, options.width, options.height, color_states,
+              options.delay_ms);
 
       // if custom (last_choice)
       if (choice == num_life_presets - 1) {
         etch_a_sketch(color_states, 2, MAIN_BUTTON);
       } else {
-        ca_create_and_load_preset(preset_file, life_presets[choice].fn,
-                                  save_preset);
+        ca_create_and_load_preset(options.preset_file, life_presets[choice].fn,
+                                  options.save_preset);
       }
 
-      ca_run(use_time_limit, run_time, MAIN_BUTTON);
+      ca_run(options.use_time_limit, options.run_time, MAIN_BUTTON);
 
     } else if (choice == WIREWORLD) {
-      // display wireworld menu
+      // display wireworld menu and get choice and options
       choice = display_menu("Choose WireWorld Preset:", ww_presets,
                             num_ww_presets, MAIN_BUTTON);
+      preset_option_t options = ww_presets[choice].options;
 
-      // init gl and colors
-      gl_init(100, 100, GL_DOUBLEBUFFER);
-      color_t color_states[4] = {GL_WHITE, GL_BLUE, GL_RED, GL_BLACK};
+      // init colors
+      color_t BG_COLOR = gl_color(0x1d, 0x1e, 0x2c);
+      color_t BLUE = gl_color(0x17, 0x68, 0xff);
+      color_t ORANGE = gl_color(0xf7, 0x5c, 0x03);
+      color_t color_states[4] = {BG_COLOR, ORANGE, BLUE, GL_WHITE};
 
       // init the ca
-      ca_init(WIREWORLD, gl_get_width(), gl_get_height(), color_states,
-              delay_ms);
+      ca_init(WIREWORLD, options.width, options.height, color_states,
+              options.delay_ms);
 
       // if custom (last choice)
       if (choice == num_ww_presets - 1) {
         etch_a_sketch(color_states, 4, MAIN_BUTTON);
       } else {
-        ca_create_and_load_preset(preset_file, ww_presets[choice].fn,
-                                  save_preset);
+        ca_create_and_load_preset(options.preset_file, ww_presets[choice].fn,
+                                  options.save_preset);
       }
 
       // run the ca
-      ca_run(use_time_limit, run_time, MAIN_BUTTON);
+      ca_run(options.use_time_limit, options.run_time, MAIN_BUTTON);
     }
   }
 
