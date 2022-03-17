@@ -248,8 +248,6 @@ int profile_on(void)
     total_instructions = ((uintptr_t) &__text_end__ - (uintptr_t) text_start) / 4;
     profiler_ct = malloc(4 * total_instructions); // 4 byte integer for each instruction
 
-    printf("total instructions, starting at 0x8000: %d\n", total_instructions);
-
     // zero-out all counts
     for (int i = 0; i < total_instructions; i++) {
         profiler_ct[i] = 0;

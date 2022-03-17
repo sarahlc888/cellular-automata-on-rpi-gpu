@@ -48,7 +48,7 @@ const preset_t main_presets[] = {{"Game of Life",
 
 // Presets for the game of life
 const preset_t life_presets[] = {{"Simple Oscillation",
-                                  (preset_fn_t)create_life_preset,
+                                  (preset_fn_t)create_life_blinker_preset,
                                   {.width = 256,
                                    .height = 256,
                                    .delay_ms = 300,

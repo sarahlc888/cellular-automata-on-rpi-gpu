@@ -85,7 +85,7 @@ int recursive_scan(const char* path)
  * --------------------------
  * Print function for debugging purposes
  */
-static void print_color_buf(color_t buf[], unsigned int num_entries)
+void print_color_buf(color_t buf[], unsigned int num_entries)
 {
     for (int i = 0; i < num_entries; i++) {
         printf("%x ", buf[i]);
@@ -139,16 +139,16 @@ void write_preset(color_t writebuf[], unsigned int buf_bytes, const char *fname)
         f_close(&fp);
         return;
     }
-    printf("Wrote %d bytes to file %s:\n---\n", nwritten, fname); 
+    printf("Wrote %d bytes to file %s:\n", nwritten, fname); 
     // print_color_buf(writebuf, buf_bytes / 4);
-    printf("---\n"); 
     f_close(&fp);   // close file (should commit to media)
 }
 
 /*
  * Function: read_preset
  * --------------------------
- * Read the given preset array from the file name on the SD card.
+ * Read the given preset array `readbuf` of size `buf_bytes` from the file 
+ * `fname` on the SD card.
  */
 void read_preset(color_t readbuf[], unsigned int buf_bytes, const char *fname)
 {
@@ -162,11 +162,7 @@ void read_preset(color_t readbuf[], unsigned int buf_bytes, const char *fname)
     if (res != FR_OK) {
         printf("Could not stat file %s. Error: %s\n", fname, ff_err_msg(res));
         return;
-    } else {
-        printf("ls %s (file size should be %d bytes, date/time is bunk)\n", fname, buf_bytes);
-        print_fileinfo(&fi, "");
-    }
-
+    } 
     // open the file up again to read it
     res = f_open(&fp, fname, FA_READ);
     if (res != FR_OK) {
@@ -180,14 +176,13 @@ void read_preset(color_t readbuf[], unsigned int buf_bytes, const char *fname)
         printf("Could not read from file %s. Error: %s\n",fname, ff_err_msg(res));
         return;
     }
-    printf("Read %d bytes from file %s:\n---\n", nread, fname); 
-    printf("---\n"); 
+    printf("Read %d bytes from file %s:\n", nread, fname); 
 }
 
 /*
  * Function: make_dir
  * --------------------------
- * Create the indicated directory
+ * Create the indicated directory at `path`.
  */
 int make_dir(const char *path)
 {
@@ -204,7 +199,8 @@ int make_dir(const char *path)
 /*
  * Function: ca_ffs_init
  * --------------------------
- * Initialize file system by mounting the SD card.
+ * Initialize file system by mounting the SD card. Store the file system object
+ * at the given pointer `fs`.
  */
 void ca_ffs_init(FATFS *fs)
 {

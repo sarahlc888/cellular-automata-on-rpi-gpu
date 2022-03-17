@@ -45,18 +45,74 @@ typedef struct {
 // type of function pointer used to create a preset
 typedef unsigned int (*preset_fn_t)(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 
-void create_life_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
-void create_life_preset2(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+/*
+ * Function: create_life_blinker_preset
+ * --------------------------
+ * Game of Life display filled with blinkers
+ */
+void create_life_blinker_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+
+/*
+ * Function: create_life_small_preset
+ * --------------------------
+ * Toy Game of Life grid with small oscillators
+ */
+void create_life_small_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+
+/*
+ * Function: create_life_bunnies
+ * --------------------------
+ * Game of Life grid with propagating bunnies. From https://conwaylife.com/wiki
+ */
 void create_life_bunnies(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+
+/*
+ * Function: create_life_karel_177
+ * --------------------------
+ * Game of Life grid with mandala-style graphics. From https://conwaylife.com/wiki
+ */
 void create_life_karel_177(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+
+/*
+ * Function: create_life_flying_wing
+ * --------------------------
+ * Game of Life grid with two flying shapes. From https://conwaylife.com/wiki
+ */
 void create_life_flying_wing(unsigned int width, unsigned int height, unsigned int padded_width, void* state, color_t *colors);
+
+/*
+ * Function: create_random_life_preset
+ * --------------------------
+ * Create a random preset with the values of each cell determined by using
+ * random numbers.
+ */
 void create_random_life_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 
+/*
+ * Function: create_ww_preset
+ * --------------------------
+ * WireWorld preset. OR gate and XOR gate feeding into an AND gate.
+ */
 void create_ww_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+
+/*
+ * Function: create_ww_AND_gates
+ * --------------------------
+ * WireWorld prest from Golly RLE format.
+ */
 void create_ww_AND_gates(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
+/*
+ * Function: create_ww_nh_multiplication
+ * --------------------------
+ * WireWorld prest from Golly RLE format.
+ */
 void create_ww_nh_multiplication(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
 
+/*
+ * Function: create_custom_preset
+ * --------------------------
+ * Placeholder function to indicate use of custom preset.
+ */
 void create_custom_preset(unsigned int width, unsigned int height, unsigned int padded_width, void *state, color_t *colors);
-
 
 #endif

@@ -2,8 +2,10 @@
  * 03/14/2022
  * Code for CS107E Final Project
  *
- * Main functionality of the app.
+ * Main functionality of the app. Begin at the menu to select the cellular automata
+ * type and the corresponding preset. Run the selected options and then repeat.
  */
+
 #include "../../include/button.h"
 #include "../../include/ca_gpu.h"
 #include "../../include/etch_a_sketch.h"
@@ -17,6 +19,7 @@
 #include "printf.h"
 #include "ringbuffer.h"
 #include "strings.h"
+#include "system.h"
 #include "timer.h"
 #include "uart.h"
 
@@ -24,6 +27,7 @@
 
 void main() {
   unsigned int verbosity_level = 0;
+  system_enable_cache();
 
   uart_init();
   timer_init();

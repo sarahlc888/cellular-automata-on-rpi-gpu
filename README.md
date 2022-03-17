@@ -2,21 +2,23 @@
 ## Team members
 Avi Udash and Sarah Chen
 ## Project description
-Our project runs cellular automata simulations on the Raspberry Pi. It supports Conway's Game of Life and WireWorld.
+Our project runs cellular automata simulations for Conway's Game of Life and WireWorld on the Raspberry Pi.
 
-`make run` runs the application with the functionality described below, and there are also a variety of targets for `make test` (see src/tests) that test specific elements of the project.
+The automata are sent to a display via HDMI.
 
-We also implemented a user interface to run the simulations. Users can select between types of cellular automata and presets using a button (short press to toggle options, long press to select), and they can start/stop the simulation using a button press too. 
+The library can be used directly or via a user interface
 
-TODO: describe etch-a-sketch
+The user interface begins at a menu screen where users can select between types of cellular automata and presets using a button (short press to toggle options, long press to select). They can also design a custom start state using two etch-a-sketch style knobs. 
 
-While there are many well-documented approaches to optimizing performance for the game of life, specifically, (often leveraging the fact that there are only two states), we wanted to keep our algorithm adaptable to other automata like WireWorld. Therefore, we sped up the cellular automata by running screen refreshes on the GPU. The approach involved vectorizing the update to handle 16 cell updates at a time (using the QPU's SIMD capabilities). The SIMD implementation is in the QPU assembly file `src/qasm/life_driver.qasm`, which we assembled using [vc4asm](http://maazl.de/project/vc4asm/doc/index.html) and then loaded into our C drivers with an `#include` statement.
+`make run` runs the application with the functionality described above, and there are also a variety of targets for `make test` (see src/tests for the options test_ca_gpu, TODO) that test specific modules.
+
+We sped up the cellular automata by running screen refreshes on the GPU. The approach involved vectorizing the update to handle 16 cell updates at a time (using the QPU's SIMD capabilities). The SIMD implementation is in the QPU assembly file `src/qasm/life_driver.qasm`, which we assembled using [vc4asm](http://maazl.de/project/vc4asm/doc/index.html) and then loaded into our C drivers with an `#include` statement.
 
 The GPU is ~5.95 (stdev = 0.39) times faster than the CPU at all resolutions from 128x128 up to 1024x1024 (see below).
 
 <img src="img/cpu_vs_gpu_performance.png" alt="CPU vs. GPU performance graph" width="400"/>
 
-
+While there are many other well-documented approaches to optimizing performance for the Game of Life (often leveraging the fact that there are only two states), we wanted to keep our algorithm adaptable to automata with multiple states like WireWorld. The vectorization process can be adapted to WireWorld simply by updating the assembly script to match the automata's rules.
 
 ### Components
 - Baseline CA simulation library
@@ -26,6 +28,7 @@ The GPU is ~5.95 (stdev = 0.39) times faster than the CPU at all resolutions fro
   - Buttons and interrupts
   - Potentiometers and SPI for analog-to-digital conversion
 - Etch-a-sketch functionality to determine preset
+  - Color customization
 - Performance optimization 
   - CPU: Enabled cache, compiled with -O3, fined tuned algorithm using profiler (e.g. comparing modulo for wrapping vs. ternary conditions vs. simple if statements), unrolled update function loop
   - GPU: Vectorized Game of Life on the GPU
@@ -47,9 +50,9 @@ Cellular automata library
 - We used the [FAT Filesystem module](http://elm-chan.org/fsw/ff/00index_e.html), CS107E [guide](http://cs107e.github.io/guides/extras/sd_library/) to FatFS, and the example project at `$CS107E/examples/sd_fatfs` to write code to read and write presets.
 - To enable the cache for CPU optimization, we used `system.c` and `system.h` from CS107E code
 - We used code from Sarah's profiler extension of assignment 7 to evaluate performance
-- http://golly.sourceforge.net/Help/formats.html#rle
-  - https://github.com/jimblandy/golly/blob/master/src/Patterns/WireWorld/NylesHeise.mcl
-  - https://conwaylife.com/wiki/Flying_wing
+- http://golly.sourceforge.net/Help/formats.html#rle for various preset formats such as Nyles Heise
+  - https://conwaylife.com/wiki/ for various presets like flying wing 
+  - More detailed citations are in the code
 - Reading and writing files to the SD card using [FAT File System](http://elm-chan.org/fsw/ff/00index_e.html), guided by the CS 107E [guide](http://cs107e.github.io/guides/extras/sd_library/)
 
 GPU
@@ -74,6 +77,7 @@ GPU
   - https://www.linuxtut.com/en/2e85318989170f967e4b/
   - https://www.elesoftrom.com.pl/blog/en/vc4-3d-programming.php#_vpm
   - https://nullprogram.com/blog/2014/06/10/ 
+  - https://github.com/hermanhermitage/videocoreiv
 Vectorized game of life
 
 - Our sliding window approach was inspired by [Conway’s Game of Life in R: Or On the Importance of Vectorizing Your R Code](https://www.r-bloggers.com/2018/10/conways-game-of-life-in-r-or-on-the-importance-of-vectorizing-your-r-code/), which built 8 matrices in order to vectorize neighbor calculations and handled edge-cases with zero-padding.
@@ -96,3 +100,5 @@ TODO
 
 You are encouraged to submit photos/videos of your project in action.
 Add the files and commit to your project repository to include along with your submission.
+
+<img src="img/breadboard_and_controls.jpg" alt="Hardware components" width="400"/>

@@ -20,11 +20,14 @@
  *
  * format: {button_pin, button_color, led_pin}
  */
+const color_t BG_COLOR = 0xff1d1e2c; // gl_color(0x1d, 0x1e, 0x2c);
+const color_t BLUE = 0xff1768ff; // gl_color(0x17, 0x68, 0xff);
+const color_t ORANGE = 0xfff75c03; // gl_color(0xf7, 0x5c, 0x03);
 const color_buttons_t color_buttons[] = {
     {GPIO_PIN20, GL_WHITE, GPIO_PIN12}, // white button
-    {GPIO_PIN16, GL_BLACK, GPIO_PIN0},  // black button
-    {GPIO_PIN26, GL_RED, GPIO_PIN6},    // red button
-    {GPIO_PIN19, GL_BLUE, GPIO_PIN5}};  // blue button
+    {GPIO_PIN16, BG_COLOR, GPIO_PIN0},  // black button
+    {GPIO_PIN26, ORANGE, GPIO_PIN6},    // red button
+    {GPIO_PIN19, BLUE, GPIO_PIN5}};  // blue button
 
 // calc number of color buttons
 const unsigned num_color_buttons =

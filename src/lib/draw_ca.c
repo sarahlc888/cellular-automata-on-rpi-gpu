@@ -18,7 +18,7 @@
 #include "strings.h"
 #include "timer.h"
 
-// Wireworld gate types
+// Wireworld gate types, taken from the GIF in https://mathworld.wolfram.com/WireWorld.html
 gate_t or_gate = {.width = 3,
                   .height = 5,
                   .in_row_1 = 1,
@@ -504,11 +504,12 @@ void create_random_life_preset(unsigned int width, unsigned int height,
 }
 
 /*
- * Function: create_life_preset
+ * Function: create_life_blinker_preset
  * --------------------------
- * This function populates `state` with a random preset state for Life.
+ * This function populates `state` with a preset state for Life full of
+ * oscillating blinkers.
  */
-void create_life_preset(unsigned int width, unsigned int height,
+void create_life_blinker_preset(unsigned int width, unsigned int height,
                         unsigned int padded_width, void *state,
                         color_t *colors) {
   for (int i = 5; i < width - 5; i += 5) {
@@ -519,14 +520,14 @@ void create_life_preset(unsigned int width, unsigned int height,
 }
 
 /*
- * Function: create_life_preset2
+ * Function: create_life_small_preset
  * --------------------------
  * This function populates `state` with a custom preset state for Life that uses
  * more patterns.
  *
  * This pattern is very small but requires at least a 32x32 screen.
  */
-void create_life_preset2(unsigned int width, unsigned int height,
+void create_life_small_preset(unsigned int width, unsigned int height,
                          unsigned int padded_width, void *state,
                          color_t *colors) {
   int cur_row = 5;
@@ -555,7 +556,7 @@ void create_life_preset2(unsigned int width, unsigned int height,
  * Function: create_life_bunnies
  * --------------------------
  * This function populates `state` with propagating bunnies for the Game
- * of Life.
+ * of Life. The preset is from https://conwaylife.com/wiki/Bunnies.
  */
 void create_life_bunnies(unsigned int width, unsigned int height,
                          unsigned int padded_width, void *state,
@@ -567,7 +568,7 @@ void create_life_bunnies(unsigned int width, unsigned int height,
  * Function: create_life_karel_177
  * --------------------------
  * This function populates `state` with mandala-style graphics for the Game
- * of Life.
+ * of Life. Preset from https://conwaylife.com/wiki/Karel%27s_p177.
  */
 void create_life_karel_177(unsigned int width, unsigned int height,
                            unsigned int padded_width, void *state,
@@ -585,6 +586,7 @@ void create_life_karel_177(unsigned int width, unsigned int height,
  * Function: create_life_flying_wing
  * --------------------------
  * This function populates `state` with two wings for the Game of Life.
+ * Preset from https://conwaylife.com/wiki/Flying_wing.
  */
 void create_life_flying_wing(unsigned int width, unsigned int height,
                              unsigned int padded_width, void *state,
@@ -600,7 +602,8 @@ void create_life_flying_wing(unsigned int width, unsigned int height,
 /*
  * Function: create_ww_preset
  * --------------------------
- * This function populates `state` with a custom preset state for WireWorld.
+ * This function populates `state` with a custom preset state for WireWorld. It
+ * is simply an OR gate and XOR gate feeding into an AND gate.
  */
 void create_ww_preset(unsigned int width, unsigned int height,
                       unsigned int padded_width, void *state, color_t *colors) {
@@ -616,7 +619,8 @@ void create_ww_preset(unsigned int width, unsigned int height,
 /*
  * Function: create_ww_AND_gates
  * --------------------------
- * This function draws AND gates with various input states.
+ * This function draws AND gates with various input states. Preset from
+ * http://golly.sourceforge.net/.
  */
 void create_ww_AND_gates(unsigned int width, unsigned int height,
                          unsigned int padded_width, void *state,
@@ -627,7 +631,7 @@ void create_ww_AND_gates(unsigned int width, unsigned int height,
 /*
  * Function: create_ww_nh_multiplication
  * --------------------------
- * Pattern taken from https://github.com/jimblandy/golly/blob/master/src/Patterns/WireWorld/NylesHeise.mcl
+ * Preset from http://golly.sourceforge.net/.
  */
 void create_ww_nh_multiplication(unsigned int width, unsigned int height,
                                  unsigned int padded_width, void *state,

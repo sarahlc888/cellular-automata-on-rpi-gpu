@@ -79,7 +79,8 @@ static const ca_option_t ca_modes[] = {
  * due to padding.)
  * 
  * IMPORTANT: `screen_width` must be a multiple of 16 to support the sliding
- * window vectorization approach for game of life.
+ * window vectorization approach for game of life. Also, requesting 1280 or 
+ * above leads to mailbox failure.
  * 
  * The CA will use `colors`, a client-specified color array. The first color is 
  * the background color, and the remaining colors play roles specified by the
@@ -92,8 +93,8 @@ static const ca_option_t ca_modes[] = {
 void ca_init(ca_mode_t ca_mode, unsigned int screen_width,
              unsigned int screen_height, color_t *colors,
              unsigned int update_delay) {
-  // require that screen width is a multiple of 16
-  assert(screen_width % 16 == 0);
+  // require that screen width is a multiple of 16 and within allowed bounds
+  assert((screen_width % 16 == 0) && (screen_width < 1280));
 
   // initialize GL for non-custom modes
   gl_init(screen_width + 2 * border_width, screen_height + 2 * border_width,
@@ -441,7 +442,6 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
   unsigned int start = timer_get_ticks();
   unsigned int prev_ticks = timer_get_ticks();
   unsigned int total_updates = 0;
-  unsigned int total_ticks = 0;
   while ((!use_time_limit) || (timer_get_ticks() < ticks_to_run + start)) {
     timer_delay_ms(ca.update_ms);
 
@@ -449,7 +449,7 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
     ca.next_state = fb_get_draw_buffer();
 
     update_state(ca.cur_state, ca.next_state);
-    if (verbose) {
+    if (verbose == 2) {
       printf("ticks per update: %d\n", timer_get_ticks() - prev_ticks);
     }
 
@@ -459,7 +459,6 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
     // make ca.next_state the ca.cur_state
     ca.cur_state = ca.next_state;
 
-    total_ticks += (timer_get_ticks() - prev_ticks); // TODO: catch overflow?
     prev_ticks = timer_get_ticks();
     total_updates++;
 
@@ -470,6 +469,6 @@ void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run,
   }
 
   if (verbose) {
-    printf("total updates: %d\n", total_updates);
+    printf("total updates: %d; about %d updates per second\n", total_updates, total_updates / (ticks_to_run / 1000000));
   }
 }

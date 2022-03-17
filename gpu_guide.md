@@ -1,6 +1,14 @@
 ## Notes on the Raspberry Pi's GPU
 
+Note: cannot request 1,280 size 
+
+
 ### Overview
+In addition to the ARM processor, the Raspberry Pi includes a VideoCore IV graphics processing unit (GPU).
+
+"Quad Processor (QPU). The QPU is a 16-way SIMD processor. Each processor has two vector floatingpoint ALUs which carry out multiply and non-multiply operations in parallel with single instruction cycle
+latency. Internally the QPU is a 4-way SIMD processor multiplexed 4× over four cycles, making it particularly
+suited to processing streams of quads of pixels." manual
 GPU vs QPU vs VPU
 
 TODO: clarify why memory has to be locked and stuff and allocated

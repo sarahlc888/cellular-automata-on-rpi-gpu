@@ -34,13 +34,28 @@ typedef struct _ca_option_struct {
     ca_fn_t fn;
 } ca_option_t;
 
+/*
+ * Function: ca_init
+ * --------------------------
+ * Initialize the cellular automata simulation.
+ */
 void ca_init(ca_mode_t ca_mode, 
     unsigned int screen_width, unsigned int screen_height, 
     color_t* colors,
     unsigned int update_delay);
 
+/*
+ * Function: ca_create_and_load_preset
+ * --------------------------
+ * Create a preset and load it into the frame buffer. save it to the SD card if `save_to_sd` == 1.
+ */
 void ca_create_and_load_preset(const char* fname, preset_fn_t make_preset, unsigned int save_to_sd);
 
+/*
+ * Function: ca_run
+ * --------------------------
+ * Run the cellular automata simulation.
+ */
 void ca_run(unsigned int use_time_limit, unsigned int ticks_to_run, unsigned main_button, unsigned int verbose);
 
 #endif
