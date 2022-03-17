@@ -81,6 +81,7 @@ nop;       nop;
 nop;       nop;
 
 ### PROCESS BLOCK ###
+# We determine the central cell as well as its 8 neighbors using basic arithmetic
 process_block:
     # Central cell = cur_state + padded_width * (r + 1) + (c + 1)
     add r0, cur_row, 1; nop # (r + 1)
@@ -253,19 +254,14 @@ store_to_main_mem:
     # move vector from QPU to VPM (generic block write)
     # configure VPM to be written in (stride=0, horizontal, ignore packed/laned, 32-bit, address 0x0) 1 0 10 00000000 // 0xa00
     ldi vw_setup, 0xa00 
-    mov vpm, r0 # move CYAN data into VPM
+    mov vpm, r0 
     nop;       nop;
-    # mov vpm, cur_col # debug info 
-    # mov vpm, write_addr # debug info
-    # mov vpm, cur_row # move write_addr into VPM for debugging
-    # mov vpm, next_state # move write_addr into VPM for debugging
 
     # store data from VPM to main memory (DMA store)
     # |ID |UNITS   |DEPTH   |LANED |HORIZ |VPMBASE     |MODEW
     # |10 |0010000 |0000001 |0     |0     |00000000000 |000
     # config (16 rows, length 1, 0, vertical, addr 0x0, 32-bit) // 0x88010000
     ldi vw_setup, 0x88010000 
-    # mov vw_addr, debug_addr
     or vw_addr, write_addr, 0;          nop # store to main memory at calculated address
     or rb39, vw_wait, ra39;       nop # Wait for the DMA to complete (rb50 = VPM_ST_WAIT)
 
