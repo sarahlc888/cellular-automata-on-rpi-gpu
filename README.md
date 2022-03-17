@@ -1,104 +1,90 @@
 ## CAllisto/Icarus TODO: Cellular Automata on the Raspberry Pi GPU
 ## Team members
 Avi Udash and Sarah Chen
+
 ## Project description
-Our project runs cellular automata simulations for Conway's Game of Life and WireWorld on the Raspberry Pi.
+Our project runs cellular automata simulations for Conway's Game of Life and WireWorld on the Raspberry Pi's CPU and GPU. The automata are sent to an external display via HDMI, and a hardware user interface allows users to select between types of cellular automata and various preset states (using a short button press to toggle options and a long press to select) as well as to start and stop the simulation. Users can also design a custom start state using two etch-a-sketch style knobs and four buttons that determine the current draw color.
 
-The automata are sent to a display via HDMI.
+`make run` begins the user interface described above, and we also include a variety of targets for `make test` that test specific modules. 
 
-The library can be used directly or via a user interface
+We sped up the Game of Life by running screen refreshes on the GPU (and the QPU specifically). To do so, we wrote a QPU assembly program (`src/qasm/life_driver.qasm`) that handles individual screen updates by running a sliding window of size 16 over the grid. Since the QPU is a 16-way SIMD processor, this choice of vectorization was a natural step. For each refresh, we sent the assembly code to the GPU and waited for the it to finish updating the framebuffer before resuming the program. For more information about the GPU, see `gpu_guide.md`.
 
-The user interface begins at a menu screen where users can select between types of cellular automata and presets using a button (short press to toggle options, long press to select). They can also design a custom start state using two etch-a-sketch style knobs. 
-
-`make run` runs the application with the functionality described above, and there are also a variety of targets for `make test` (see src/tests for the options test_ca_gpu, TODO) that test specific modules.
-
-We sped up the cellular automata by running screen refreshes on the GPU. The approach involved vectorizing the update to handle 16 cell updates at a time (using the QPU's SIMD capabilities). The SIMD implementation is in the QPU assembly file `src/qasm/life_driver.qasm`, which we assembled using [vc4asm](http://maazl.de/project/vc4asm/doc/index.html) and then loaded into our C drivers with an `#include` statement.
-
-The GPU is ~5.95 (stdev = 0.39) times faster than the CPU at all resolutions from 128x128 up to 1024x1024 (see below).
+The GPU is ~5.95 (stdev = 0.39) times faster than the CPU at all resolutions from 128x128 up to 1024x1024 (see graph).
 
 <img src="img/cpu_vs_gpu_performance.png" alt="CPU vs. GPU performance graph" width="400"/>
 
-While there are many other well-documented approaches to optimizing performance for the Game of Life (often leveraging the fact that there are only two states), we wanted to keep our algorithm adaptable to automata with multiple states like WireWorld. The vectorization process can be adapted to WireWorld simply by updating the assembly script to match the automata's rules.
+Our vectorization process can be adapted to WireWorld (or any other cellular automata) by updating the QPU assembly script to match the automata's rules.
 
 ### Components
-- Baseline CA simulation library
-  - Support Game of Life and WireWorld
-  - FAT File System support for reading/writing preset states
+- Baseline cellular automata simulation library
+  - Run Game of Life and WireWorld directly in the double-buffered framebuffer
+  - FAT File System support for reading/writing preset states to the SD card
 - Hardware control board
   - Buttons and interrupts
   - Potentiometers and SPI for analog-to-digital conversion
-- Etch-a-sketch functionality to determine preset
-  - Color customization
+- Etch-a-sketch functionality to create custom preset
+  - Color customization through four buttons
 - Performance optimization 
   - CPU: Enabled cache, compiled with -O3, fined tuned algorithm using profiler (e.g. comparing modulo for wrapping vs. ternary conditions vs. simple if statements), unrolled update function loop
   - GPU: Vectorized Game of Life on the GPU
 ## Member contribution
-Avi: TODO
-Sarah: initial CA simulation library, file system, and performance optimizations
+- Avi: hardware controls and etch-a-sketch functionality
+- Sarah: baseline CA simulation library and performance optimizations
 
 ## References
-
-Cite any references/resources that inspired/influenced your project.
-If your submission incorporates external contributions such as adopting
-someone else's code or circuit into your project, be sure to clearly
-delineate what portion of the work was derivative and what portion is
-your original work.
-
 Cellular automata library
-- Directly used system.h and randomHardware.h
-- Our WireWorld implementation referenced [this](https://mathworld.wolfram.com/WireWorld.html) description of the cellular automaton (including the embedded GIF of OR, XOR, and AND gates).
-- We used the [FAT Filesystem module](http://elm-chan.org/fsw/ff/00index_e.html), CS107E [guide](http://cs107e.github.io/guides/extras/sd_library/) to FatFS, and the example project at `$CS107E/examples/sd_fatfs` to write code to read and write presets.
-- To enable the cache for CPU optimization, we used `system.c` and `system.h` from CS107E code
-- We used code from Sarah's profiler extension of assignment 7 to evaluate performance
-- http://golly.sourceforge.net/Help/formats.html#rle for various preset formats such as Nyles Heise
-  - https://conwaylife.com/wiki/ for various presets like flying wing 
-  - More detailed citations are in the code
-- Reading and writing files to the SD card using [FAT File System](http://elm-chan.org/fsw/ff/00index_e.html), guided by the CS 107E [guide](http://cs107e.github.io/guides/extras/sd_library/)
+- Directly used the `system.h` and `randomHardware.h` modules from `$CS107E/src`
+- Our WireWorld implementation referenced the [WolframAlpha](https://mathworld.wolfram.com/WireWorld.html) description of the cellular automaton (including the embedded GIF of OR, XOR, and AND gates).
+- We used the [FAT Filesystem documentation](http://elm-chan.org/fsw/ff/00index_e.html), CS107E [guide](http://cs107e.github.io/guides/extras/sd_library/) to FatFS, the CS107E `ff.h` module, and the example project at `$CS107E/examples/sd_fatfs` to write code to read and write presets.
+- We used code from Sarah's profiler extension of assignment 7 to evaluate cellular automata performance and guide algorithm adjustments
+- Presets
+  - We used [Golly](http://golly.sourceforge.net/Help/formats.html#rle) for the WireWorld presets of AND gates and Nyles Heise Multiplication engine
+  - We used the [Conway Life Wiki](https://conwaylife.com/wiki/) for various the Life presets flying wing, bunnies, and Karel 177 Oscillator 
 
 GPU
 - We built directly upon a past CS 107E GPU project, "Bare Metal C QPU Library for the Raspberry Pi" by ahconkey and JoshFrancisCodes [(GitHub)](https://github.com/cs107e/ahconkey-JoshFrancisCodes-project)
-    - Before being given access to this code, we did independent research that covered many of their project's references (especially those that heavily informed their code on). 
-    - Their code was an invaluable starting point because it was baremetal and interfaced with the CS 107E mailbox code.
-    - This code was particularly helpful in demonstrating: how to submit a program to the GPU by directly writing to GPU registers, how to allocate/free/lock memory for the GPU, how to use `#include` to load assembled QPU programs (and in guiding us to use the [vc4asm](http://maazl.de/project/vc4asm/doc/) assembler). We use their `mailbox_functions` and `qpu` modules in their entirety. The `mailbox_functions` module contained a nasty bug that required hours to remove.
-    - Note: the code did not compile in its given form, so many adjustments were made. Almost all work hours involving the GPU centered around getting a simple poke program to consistently work by consulting this code as well as well as the below references. (The next steps were working with loading/storing more complicated vectors.)
-
+    - Before being given access to this code, we did independent research that covered many of their project's references (especially the sources whose code they leaned most heavily on). 
+    - Their code was an invaluable starting point because it ran on baremetal and interfaced with the CS 107E mailbox. It was particularly helpful in demonstrating: 
+      - How to submit a program to the GPU by directly writing to GPU registers
+      - How to allocate/free/lock memory for the GPU using mailbox functions
+      - How to use `#include` to load assembled QPU programs (and in guiding us to use the [vc4asm](http://maazl.de/project/vc4asm/doc/) assembler). 
+    - We use their `mailbox_functions` and `qpu` modules in their entirety with only small adjustments. However, we will note that their code did not compile in its given form. The `mailbox_functions` module also contained a nasty bug that required hours to remove. Almost all work hours involving the GPU centered around getting a simple poke program to consistently work while building up from this code.
 - Broadcom [VideoCore® IV 3D Architecture Reference Guide](https://docs.broadcom.com/doc/12358545)
   - QPU Register Address Map on p. 37-38
   - Section 7: VPM and VCD (particularly the tables for QPU Registers for VPM and VCD Functions)
-
-- [Hacking The GPU For Fun And Profit](https://rpiplayground.wordpress.com/category/gpu/)
-  - Our QPU assembly code was heavily based off of the accompanying [GitHub repository](https://github.com/elorimer/rpi-playground), especially the `helloworld` and `SHA-256` examples.
 - [SIMD processing of AES on the Raspberry Pi’s GPU](https://www.mnm-team.org/pub/Fopras/rixe19/PDF-Version/rixe19.pdf)
   - P. 13-17 provide a valuable overview of the GPU, which makes reading the Broadcom Manual much more accessible
-- [QPU Demo: DMA Transfers](https://asurati.github.io/wip/post/2021/09/28/qpu-demo-dma-transfers/) breaks down DMA transfers with useful examples. This was helpful in determining how to load/store vector data from main memory to the GPU VPM.
+- Our vectorized sliding window approach was inspired by [Conway’s Game of Life in R: Or On the Importance of Vectorizing Your R Code](https://www.r-bloggers.com/2018/10/conways-game-of-life-in-r-or-on-the-importance-of-vectorizing-your-r-code/), which built 8 matrices in order to vectorize neighbor calculations and handled edge-cases with zero-padding.
+- [Hacking The GPU For Fun And Profit](https://rpiplayground.wordpress.com/category/gpu/)
+  - Our QPU assembly code for the Game of Life was heavily based off of the accompanying [GitHub repository](https://github.com/elorimer/rpi-playground), especially the `helloworld` and `SHA-256` examples.
+- [QPU Demo: DMA Transfers](https://asurati.github.io/wip/post/2021/09/28/qpu-demo-dma-transfers/) breaks down DMA transfers with useful examples. This was helpful in determining how to load/store vector data from main memory to the GPU VPM (in combination with the reference directly above).
 - We consulted code for the existing QPU libraries [GPU_FFT](http://www.aholme.co.uk/GPU_FFT/Main.htm), [QPULib](https://github.com/mn416/QPULib), and [pi-gemm](https://github.com/jetpacapp/pi-gemm/blob/master/helpers.asm). The demo [gpu-deadbeef](https://github.com/0xfaded/gpu-deadbeef) demonstrates how to write to GPU registers to write from QPU registers into the VPM and then from the VPM into main memory.
 - General background/inspiration
-  - https://github.com/ali1234/vcpoke
-  - https://www.linuxtut.com/en/2e85318989170f967e4b/
-  - https://www.elesoftrom.com.pl/blog/en/vc4-3d-programming.php#_vpm
-  - https://nullprogram.com/blog/2014/06/10/ 
-  - https://github.com/hermanhermitage/videocoreiv
-Vectorized game of life
-
-- Our sliding window approach was inspired by [Conway’s Game of Life in R: Or On the Importance of Vectorizing Your R Code](https://www.r-bloggers.com/2018/10/conways-game-of-life-in-r-or-on-the-importance-of-vectorizing-your-r-code/), which built 8 matrices in order to vectorize neighbor calculations and handled edge-cases with zero-padding.
+  - A simple VPU [poke](https://github.com/ali1234/vcpoke) project
+  - [GPGPU with Raspberry Pi](https://www.linuxtut.com/en/2e85318989170f967e4b/)
+  - [Broadcom VideoCoreIV 3D, Basics of Programming](https://www.elesoftrom.com.pl/blog/en/vc4-3d-programming.php#_vpm)
+  - [A GPU Approach to Conway's Game of Life](https://nullprogram.com/blog/2014/06/10/)
+  - General info about the Raspberry Pi's GPU from [Herman Hermitage](https://github.com/hermanhermitage/videocoreiv)
 
 ## Self-evaluation
 
-Our team fully executed the plan outlined in the proposal, including the GPU component. We aimed to combine a variety of elements in the hardware and software (e.g. potentiometers, file system, cellular automata, GPU) and successfully gained experience with that spread of topics. 
+Our team fully executed the plan outlined in our proposal, including the GPU optimization component, and we successfully gained experience with a broad spread of hardware and software elements (e.g. potentiometers/SPI, file system, cellular automata, GPU).
 
-We had a series of breakthrough moments with the GPU-related aspects of the project: being able to send a simple peek/poke program through the mailbox, understanding the big picture of what was happening, getting the VPM load/store to work, and finally getting a vectorized version of the Game of Life to work for the first time. (The preset we used is burned in my memory.)
+We had a series of breakthrough moments with the GPU-related aspects of the project: being able to send a simple peek/poke program through the mailbox, understanding the big picture of what was happening, getting the VPM load/store to work, and finally getting a vectorized version of the Game of Life to work for the first time (after hours of incremental coding, testing, and debugging).
 
-We're most proud of the effort we put in and the intense learning that happened along the way. Coming into this, we knew practically nothing about GPUs (other than the fact that they would somehow let us run our simulations faster). The project was a true avalanche of learning in that domain. The process was intimidating but rewarding, and //we were able to get a working product by reading the manual and studying examples of QPU code.//
+We're most proud of the effort we put in to the project and the intense learning that happened along the way. Coming into this, we knew practically nothing about GPUs (other than the fact that they would somehow let us run our simulations faster), so the project was a true avalanche of learning in that domain. The process was intimidating but rewarding, especially because of how resources around the GPU (e.g. the manual and libraries like GPU_FFT) were somewhat inaccessible to begin with. We learned a lot about debugging in particular: how to wrangle a program that seems quite opaque, take out pieces that seemed to be causing issues, and incrementally add features back in until reaching a final product.
 
-TODO: Avi
 ## Photos
-TODO
-- Menu photo or video
-- Random state video 1024x1024
-- WireWorld multiplication engine
-- Etch-a-sketch video
-
-You are encouraged to submit photos/videos of your project in action.
-Add the files and commit to your project repository to include along with your submission.
+The breadboard and hardware controls:
 
 <img src="img/breadboard_and_controls.jpg" alt="Hardware components" width="400"/>
+
+The main menu and Game of Life submenu:
+
+<img src="img/menu1.jpg" alt="Menu start screen" width="400"/>
+<img src="img/menu2.jpg" alt="Menu second screen to select preset" width="400"/>
+
+See the video demos in `img/` for real time simulations:
+- `life_random.mov`: random preset for Game of Life on 1024 by 1024 screen (running on GPU)
+- `ww_multiplication.mov`: Golly preset for WireWorld that 
+- `ww_custom.mov`: drawing a custom etch-a-sketch start state with a single wire loop
