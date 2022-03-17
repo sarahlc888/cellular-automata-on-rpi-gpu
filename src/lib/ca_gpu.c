@@ -17,10 +17,12 @@
  * the borders of the grid using a toroidal approach (for the CPU) or by 
  * maintaining a 1-unit wide border of dead cells (for the GPU).
  * 
- * A number of functions in this library such as `count_neighbors_von_neumann()` 
- * and `cpu_life_update_state()` and features like the mode title vs. styled title 
- * are not explicitly used (leading to compilation warnings), but we keep them 
- * here for extensibility reasons.
+ * A number of functions in this library such as `count_neighbors_von_neumann()`,
+ * `cpu_life_update_state()`, and `gpu_gol_update_state_cdriver()` as well as 
+ * features like the mode title vs. styled title are not explicitly used (leading 
+ * to compilation warnings), but we keep them here for extensibility reasons.
+ * Even though they are not used in the current configuration, they are valuable
+ * options for alternative systems or for aiding future expansion.
  */
 
 #include "../../include/ca_gpu.h"

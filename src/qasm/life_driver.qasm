@@ -1,3 +1,8 @@
+# Run game of life on a given grid. Move a sliding window of size 16 across the 
+# grid. For each window, find 8 neighbor vectors, sum them, and calculate the 
+# cell's new state.
+
+############ VARIABLES ############
 # coordinates within the cellular automata grid to begin with
 .const start_row, 0
 .const start_col, 0 
@@ -45,7 +50,7 @@ or cur_state, unif, 0; nop
 or next_state, unif, 0; nop 
 or debug_addr, unif, 0; nop 
 
-############ LOOP ############
+############ LOOP TO MOVE SLIDING WINDOW ############
 # Loop through rows: cur_row is the current row; num_rows is the max row
 mov cur_row, start_row; nop 
 brr ra39, r:loop_rows
@@ -59,7 +64,7 @@ nop; nop;
 loop_rows:
 sub.setf ra39, num_rows, cur_row; nop # cur_row (cur row) - num_rows (max row)
 nop;       nop;
-brr.allz ra39, r:exit # TODO: figure out correct condition n or z. Missing a row.
+brr.allz ra39, r:exit 
 nop;       nop;
 nop;       nop;
 nop;       nop;

@@ -151,7 +151,6 @@ nop;       nop;
 # ra4 = old cell state (0 or 1); r0 = neighbor sum
 # r2, r3 are free now
 
-# TODO: check if the condition codes works on a vectorized elvel 
 sub.setf r3, r0, 3; nop # 0 if neighbor sum == 3, so Z should be set 
 mov.ifz r3, 1; nop # set 1 if neigh sum == 3, 0 otherwise
 mov.ifnz r3, 0; nop 

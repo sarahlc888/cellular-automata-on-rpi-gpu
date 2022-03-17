@@ -1,3 +1,5 @@
+# Run game of life refresh for a given sliding window of 16 cells
+
 # variable names
 .define cell, ra0
 .define nw_cell, ra20
