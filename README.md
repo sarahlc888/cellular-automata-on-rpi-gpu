@@ -19,16 +19,18 @@ Our vectorization process can be adapted to WireWorld (or any other cellular aut
 - Baseline cellular automata simulation library
   - Run Game of Life and WireWorld directly in the double-buffered framebuffer
   - FAT File System support for reading/writing preset states to the SD card
+  - RLE-pattern parser, so patterns from websites like "https://conwaylife.com/wiki" can easily be added.
 - Hardware control board
   - Buttons and interrupts
-  - Potentiometers and SPI for analog-to-digital conversion
+  - Potentiometers and SPI with MCP3008 for analog-to-digital conversion
 - Etch-a-sketch functionality to create custom preset
-  - Color customization through four buttons
+  - 2 potentiometers that control X and Y coordinates (with exponential smoothing implemented)
+  - Switch which color (state of CA) to draw with, using 4 buttons
 - Performance optimization 
   - CPU: Enabled cache, compiled with -O3, fined tuned algorithm using profiler (e.g. comparing modulo for wrapping vs. ternary conditions vs. simple if statements), unrolled update function loop
   - GPU: Vectorized Game of Life on the GPU
 ## Member contribution
-- Avi: hardware controls and etch-a-sketch functionality
+- Avi: hardware controls, etch-a-sketch functionality, menu, and additional CA features
 - Sarah: baseline CA simulation library and performance optimizations
 
 ## References
@@ -38,8 +40,14 @@ Cellular automata library
 - We used the [FAT Filesystem documentation](http://elm-chan.org/fsw/ff/00index_e.html), CS107E [guide](http://cs107e.github.io/guides/extras/sd_library/) to FatFS, the CS107E `ff.h` module, and the example project at `$CS107E/examples/sd_fatfs` to write code to read and write presets.
 - We used code from Sarah's profiler extension of assignment 7 to evaluate cellular automata performance and guide algorithm adjustments
 - Presets
-  - We used [Golly](http://golly.sourceforge.net/Help/formats.html#rle) for the WireWorld presets of AND gates and Nyles Heise Multiplication engine
+  - Implemented a parser for [Golly's Extended RLE]((http://golly.sourceforge.net/Help/formats.html#rle) patterns.
+  - We used [Golly Patterns](https://sourceforge.net/p/golly/code/ci/master/tree/Patterns/WireWorld/) for the WireWorld presets of AND gates and Nyles Heise Multiplication engine
   - We used the [Conway Life Wiki](https://conwaylife.com/wiki/) for various the Life presets flying wing, bunnies, and Karel 177 Oscillator 
+SPI and MCP3008
+- Used the provided SPI library from the `$CS107E/src`
+  - Wrote supplemental documentation for using the SPI library with information and page references from the [Broadcom Manual](https://www.raspberrypi.org/app/uploads/2012/02/BCM2835-ARM-Peripherals.pdf)
+- Wrote a module to easily use the MCP3008 using the [datahseet](https://cdn-shop.adafruit.com/datasheets/MCP3008.pdf)
+- Exponential smoothing implemented with information from the [wikipedia](https://en.wikipedia.org/wiki/Exponential_smoothing)
 
 GPU
 - We built directly upon a past CS 107E GPU project, "Bare Metal C QPU Library for the Raspberry Pi" by ahconkey and JoshFrancisCodes [(GitHub)](https://github.com/cs107e/ahconkey-JoshFrancisCodes-project)
@@ -65,6 +73,7 @@ GPU
   - [Broadcom VideoCoreIV 3D, Basics of Programming](https://www.elesoftrom.com.pl/blog/en/vc4-3d-programming.php#_vpm)
   - [A GPU Approach to Conway's Game of Life](https://nullprogram.com/blog/2014/06/10/)
   - General info about the Raspberry Pi's GPU from [Herman Hermitage](https://github.com/hermanhermitage/videocoreiv)
+
 
 ## Self-evaluation
 
