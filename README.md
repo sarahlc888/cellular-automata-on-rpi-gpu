@@ -46,7 +46,7 @@ Cellular automata library
 SPI and MCP3008
 - Used the provided SPI library from the `$CS107E/src`
   - Wrote supplemental documentation for using the SPI library with information and page references from the [Broadcom Manual](https://www.raspberrypi.org/app/uploads/2012/02/BCM2835-ARM-Peripherals.pdf)
-- Wrote a module to easily use the MCP3008 using the [datahseet](https://cdn-shop.adafruit.com/datasheets/MCP3008.pdf)
+- Wrote a module to easily use the MCP3008 using the [datasheet](https://cdn-shop.adafruit.com/datasheets/MCP3008.pdf)
 - Exponential smoothing implemented with information from the [wikipedia](https://en.wikipedia.org/wiki/Exponential_smoothing)
 
 GPU
