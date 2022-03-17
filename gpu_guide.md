@@ -1,5 +1,5 @@
 ## Notes on the Raspberry Pi's GPU
-In addition to the ARM processor, the Raspberry Pi includes a VideoCore IV graphics processing unit (GPU). Our project leveraged the Raspberry Pi's QPUs (3Ds computing cores within the GPU) specifically. The QPU is a 16-way SIMD (single instruction/multiple data) processor, which has two vector ALUs that can perform multiply and non-multiply operations in parallel during a single instruction cycle.
+In addition to the ARM processor, the Raspberry Pi includes a VideoCore IV graphics processing unit (GPU). Our project leveraged the Raspberry Pi's QPUs (3Ds computing cores within the GPU) specifically to speed up cellular automata simulations. The QPU is a 16-way SIMD (single instruction/multiple data) processor, which has two vector ALUs that can perform multiply and non-multiply operations in parallel during a single instruction cycle.
 
 Resources regarding the Raspberry Pi's GPU are somewhat sparse and inaccessible, even after the release of the Videocore IV [manual](https://docs.broadcom.com/doc/12358545). Some sources we found most useful were: 
 - [Hacking The GPU For Fun And Profit](https://rpiplayground.wordpress.com/2014/05/03/hacking-the-gpu-for-fun-and-profit-pt-1/) ([code](https://github.com/elorimer/rpi-playground)) - a series of posts describing how to run a parallel algorithm on the QPU from zero to a finished product
@@ -7,18 +7,18 @@ Resources regarding the Raspberry Pi's GPU are somewhat sparse and inaccessible,
 - [QPU Demo: DMA Transfers](https://asurati.github.io/wip/post/2021/09/28/qpu-demo-dma-transfers/) - explanation of how to use DMA transfers to move data from host memory to GPU memory (the VPM)
 - A past CS107E project, "Bare Metal C QPU Library for the Raspberry Pi" by ahconkey and JoshFrancisCodes
 
-We have some examples of GPU code in `gpu_examples/`, and `src/tests/test_gpu.c` contains driver code to run them. The assembly files for `helloworld` and `add_vectors` have more granular information in their line comments.
+We have included some examples of simple GPU programs in `gpu_examples/`, and `src/tests/test_gpu.c` contains driver code to run them. The assembly files for `helloworld` and `add_vectors`, specifically, have more granular information in their line comments that may be helpful.
 
-### Overview of GPU Workflow
+### General of GPU Workflow
 To run a program on the GPU, you must send the program to the GPU via the mailbox or by directly poking GPU registers. Three existing modules enabled us to do so:
-- `mailbox` (from $CS107E/src) allows us communicate with the GPU through reads, writes, and requests.
+- `mailbox` (from `$CS107E/src/`) allows us communicate with the GPU through reads, writes, and requests.
 - `mailbox_functions` builds upon `mailbox` to support functions like enabling the QPU, allocating/locking/freeing QPU memory, sending code to the VPU/QPU.
 - `qpu` builds upon `mailbox_functions` to initialize the QPU, allocate/free memory for the QPU, run a program on the QPU, and modify/read QPU status. 
     - Note that the `qpu_run()` function in specific circumvents the mailbox and directly pokes QPU registers (`V3D_SRQPC`, `V3D_SRQUA`, `V3D_SRQUL`, etc.) to send a program to the QPU. See the past CS107E project's README or the Videocore manual for details. 
 
 Our project built on top of these modules using the following workflow:
 - Write QPU assembly files such as those found in `gpu_examples/` to be run on the QPU
-    - Vc4asm has useful expressions for registers (e.g. `vpm` for reading and writing to ra48 and rb48)
+    - Vc4asm has useful expressions for significant hardware registers (e.g. `vpm` for reading and writing to ra48 and rb48)
 - Assemble them using [vc4asm](http://maazl.de/project/vc4asm/doc/index.html) with `vc4asm -i vc4.qinc -C FILE.c FILE.qasm`
 - Load them into C driver programs using an `unsigned program[] = { #include "FILE.c" };` statement
 - Send the code to the GPU using `qpu_run()` and spin until the GPU finishes
@@ -41,12 +41,13 @@ General tips
     nop;       nop;
     ```
 
-### Passing programs to the QPU
+### Passing assembled programs to the QPU
 When invoking `qpu_run()`, you must pass a pointer to the assembled code as well as an array of **uniforms**. Uniforms are 32-bit constants that the QPU reads in, FIFO-style, when the assembly file reads from the `unif` register. They are the most straightforward way to transfer a value from the host to the QPU. See the `helloworld` and `vector_add` examples for more information.
 
-Uniforms can specify the address that the GPU should write output to. More specifically, you can allocate and lock some GPU memory, pass in the memory address, and then instruct the GPU to write output vector(s) to that address using DMA transfer (see below). Note that when the GPU writes to the address in examples like `helloworld`, outputs are staggered by 4. We did not run into the same issue when writing directly to the framebuffer. We were not able to determine why this is, and it may be resolvable by changing more of the settings. See `helloworld.qasm` vs. `life_driver.qasm` for more.
+Uniforms can specify the address that the GPU should write output to. More specifically, you can allocate and lock some GPU memory, pass in the memory address, and then instruct the GPU to write output vector(s) to that address using DMA transfer (see below). Note that when the GPU writes to the address in examples like `helloworld`, the 16 expected outputs are staggered by 4 rather than being directly adjacent to each other in memory. We did not run into the same issue when writing directly to the framebuffer. We were not able to determine why this is, and it may be resolvable by changing more of the settings. See `helloworld.qasm` vs. `life_driver.qasm` for more.
 
-Uniforms are not sufficient for working with data, however. To operate on substantial amounts of data, you must load data from host memory to the GPU's Vertex Pipe Memory (VPM), read from the VPM to QPU registers, write from QPU registers to the VPM, and store from the VPM to the host memory.
+Uniforms are not sufficient for working substantial amounts of data. In that context, you must load data from host memory to the GPU's Vertex Pipe Memory (VPM), read from the VPM to QPU registers, write from QPU registers to the VPM, and store from the VPM to the host memory.
+
 ### Transferring data from main memory to VPM and vice versa
 The VPM is a 2D array of 32-bit words accessible by the GPU. It is 16 words wide and a maximum of 64 words in height, and the QPU can read/write to it horizontally or vertically, one vector at a time. See the schematic from the Videocore manual below:
 
@@ -65,7 +66,7 @@ or rb39, vr_wait, 0;
 ```
 to load the vector at the address in `r1` and stall until the DMA is complete. (See `add_vectors` example). 
 
-Similarly, it can store data from the VPM to the main memory using 
+Similarly, it can store data from the VPM to the main memory (address given by the next uniform) using 
 ```
 or vw_addr, unif, 0;
 or rb39, vw_wait, ra39;
@@ -79,6 +80,6 @@ After set up, you can directly read from and write to the `vpm` register as desi
 
 ### Tips and miscellaneous notes
 - The parameters here are quite fiddly, and it's difficult to debug GPU assembly code. (One approach can be to have the GPU write to a debug address specified as an additional uniform.) Engler’s theorem of epsilon-steps can save a lot of pain and enable features that would otherwise be impossible
-- r4 is read only
-- ra39 is no op, which explains why to use `brr ra39, label`, for example, when branching
+- `r4` is read only
+- `ra39` is no op, which explains why to use `brr ra39, label`, for example, when branching
 - Although the mailbox claims that the call to `mailbox_read()` within `mailbox_request()` should return 0 on success, the GPU code seems to run successfully when returning nonzero data values that appear to be legitimate reads.
