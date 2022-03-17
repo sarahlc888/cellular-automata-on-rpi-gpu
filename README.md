@@ -1,4 +1,4 @@
-## CAllisto/Icarus TODO: Cellular Automata on the Raspberry Pi GPU
+## Cellular Automata on the Raspberry Pi GPU
 ## Team members
 Avi Udash and Sarah Chen
 
